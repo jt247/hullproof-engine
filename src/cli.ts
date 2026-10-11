@@ -4,6 +4,7 @@ import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { discover } from './discover/discover.ts';
+import { mapCommand } from './commands/map.ts';
 import { scan } from './commands/scan.ts';
 import { gate, report } from './commands/report-gate.ts';
 import type { ScannerId } from './types/index.ts';
@@ -19,6 +20,7 @@ Usage: hullproof <command> [repository] [options]
 
 Commands:
   discover   Detect the stack of a repository and write stack.json
+  map        Build the code map of a repository (entry points and what protects them) and write codemap.json
   scan       Run discovery, the scanners and the checks; write <out>/<commit>/
   report     Write report.md from a scan folder
   gate       Apply the release gate to a scan folder and exit with its code
@@ -27,6 +29,9 @@ Commands:
 
 Options for discover:
   --out DIR  Folder for stack.json (default: .hullproof inside the repository). Use --out - to print to standard output.
+
+Options for map:
+  --out DIR  Folder for codemap.json (default: .hullproof inside the repository). Use --out - to print to standard output.
 
 Options for scan, report and gate:
   --out DIR         Base folder (default: .hullproof inside the repository). Files go to DIR/<commit>/.
@@ -86,6 +91,12 @@ function discoverCmd(rest: string[], out: (s: string) => void, err: (s: string) 
   return EXIT.ok;
 }
 
+function mapCmd(rest: string[], out: (s: string) => void, err: (s: string) => void): number {
+  const p = parse('map', rest, ['--out']);
+  if (typeof p === 'string') { err(`hullproof map: ${p}${p.startsWith('--out') ? ', or - for standard output' : ''}.\n`); return EXIT.badInput; }
+  return mapCommand(p.repo, (p.flags.get('--out') as string | undefined) ?? null, out, err);
+}
+
 async function scanCmd(rest: string[], err: (s: string) => void): Promise<number> {
   const p = parse('scan', rest, ['--out', '--kit', '--edition', '--stage', '--allow-network', '--tools', '--rule-pack']);
   if (typeof p === 'string') { err(`hullproof scan: ${p}\n`); return EXIT.badInput; }
@@ -118,6 +129,7 @@ export function main(argv: string[]): number | Promise<number> {
   if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') { out(HELP); return EXIT.ok; }
   if (cmd === 'version' || cmd === '--version') { out(`${ENGINE_VERSION}\n`); return EXIT.ok; }
   if (cmd === 'discover') return discoverCmd(rest, out, err);
+  if (cmd === 'map') return mapCmd(rest, out, err);
   if (cmd === 'scan') return scanCmd(rest, err);
   if (cmd === 'report' || cmd === 'gate') return readCmd(cmd, rest, err);
   err(`hullproof: unknown command "${cmd}". Run hullproof help.\n`);

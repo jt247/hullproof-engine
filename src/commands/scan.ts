@@ -6,6 +6,7 @@ import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { discover } from '../discover/discover.ts';
 import { makeContext } from '../checks/context.ts';
+import { getMap } from '../checks/map/shared.ts';
 import { checkSha, loadChecks, runChecks } from '../checks/run.ts';
 import { buildFindings, buildResults, findingsJson, findingsMarkdown, type Dropped } from '../report/build.ts';
 import { loadKit, readStage, resolveKitDir, VALIDATOR_REL, type Edition, type Scope, type Stage } from '../report/kit.ts';
@@ -37,6 +38,8 @@ export interface ScanInfo {
   // The external rule pack, if one was loaded: its folder name, file names and the sha256 of the folder. Never a path.
   rule_pack: { name: string; files: string[]; sha256: string } | null;
   checks: { total: number; ran: number; not_run: number };
+  // The code map in this folder (codemap.json): how many entry points, and the languages it did not fully read.
+  codemap: { entry_points: number; incomplete: { language: string; status: string }[] };
   dropped: Dropped[];
 }
 
@@ -100,6 +103,8 @@ export async function scan(o: ScanOptions): Promise<number> {
   const ctx = makeContext(repo, stack, hits, kitDir);
   const checks = runChecks(ctx, checkDefs);
   writeFileSync(join(dir, 'checks.json'), stableJson(checks));
+  const codemap = getMap(ctx);
+  writeFileSync(join(dir, 'codemap.json'), stableJson(codemap));
 
   const input = { kit, scope, git, checks, hits, metas, checkShas: Object.fromEntries(checkDefs.map((c) => [c.id, checkSha(c)])), rulesDirs: [join(RULES_DIR, 'semgrep'), ...(pack.path ? [pack.path] : [])] };
   const results = buildResults(input);
@@ -115,6 +120,7 @@ export async function scan(o: ScanOptions): Promise<number> {
     scanners_available: true, tools: metas.map((m) => m.tool),
     rule_pack: pack.path ? { name: basename(pack.path), files: ruleFiles(pack.path).map((f) => basename(f)), sha256: dirSha256(pack.path) } : null,
     checks: { total: checkDefs.length, ran: checks.results.length, not_run: checks.not_run.length },
+    codemap: { entry_points: codemap.counts.entry_points, incomplete: codemap.coverage.filter((c) => c.status !== 'mapped').map((c) => ({ language: c.language, status: c.status })) },
     dropped,
   };
   writeFileSync(join(dir, 'scan.json'), stableJson(info));

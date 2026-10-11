@@ -12,9 +12,12 @@ import type { AnyCheck, CodeCheck } from './types.ts';
 import { check as webhookVerify } from './code/webhook-verify.ts';
 import { ownerFilter, toolOwnerFilter } from './code/owner-filter.ts';
 import { check as adminRole } from './code/admin-role.ts';
+import { ENTRY_CHECKS } from './map/entry-checks.ts';
+import { CONFIG_CHECKS } from './map/config-checks.ts';
+import { PRO_MAP_CHECKS } from './pro-map.ts';
 
 export const CHECKS_DIR = fileURLToPath(new URL('../../checks/', import.meta.url));
-export const CODE_CHECKS: CodeCheck[] = [webhookVerify, ownerFilter, toolOwnerFilter, adminRole];
+export const CODE_CHECKS: CodeCheck[] = [webhookVerify, ownerFilter, toolOwnerFilter, adminRole, ...ENTRY_CHECKS, ...PRO_MAP_CHECKS, ...CONFIG_CHECKS];
 
 export function loadChecks(dir: string = CHECKS_DIR): AnyCheck[] {
   const json = readdirSync(dir).filter((n) => n.endsWith('.json')).sort(cmp)

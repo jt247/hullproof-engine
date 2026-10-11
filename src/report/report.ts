@@ -7,6 +7,7 @@ import { OWNER_ACTION } from './build.ts';
 import type { GateOutcome } from '../gate/gate.ts';
 import { SEV_RANK, type Kit } from './kit.ts';
 import type { ScanFolder } from './load.ts';
+import { renderEntryPoints } from './entry-points.ts';
 
 const cell = (s: string): string => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const loc = (e: { file: string; line: number }): string => `\`${e.file}:${e.line}\``;
@@ -17,7 +18,7 @@ const STATE_MEANS: Record<RouteState, string> = {
   'NEEDS BUILD': 'Only a production build from this commit can settle these.',
   'ASK OWNER': 'Only the owner can answer these.',
   'ATTESTATION': 'These need a signed, dated statement.',
-  'UNKNOWN': 'These are settled by reading code, and no engine check or rule covers them yet. Phase 1 has no code map and no model.',
+  'UNKNOWN': 'These are settled by reading code, and no engine check or rule covers them yet. The engine has a code map and no model.',
 };
 
 export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome): string {
@@ -117,6 +118,8 @@ export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome): string
   p('| Kind | Files |', '|---|---|');
   for (const k of s.surface.surfaces) p(`| ${k.kind} | ${k.count} |`);
   p('');
+
+  if (s.codemap) p(...renderEntryPoints(s.codemap));
 
   p('## Unverified controls (NOT ASSESSED)', '');
   p('Nothing in the files settled these. They are open, not passed. Each group says what settles it.', '');

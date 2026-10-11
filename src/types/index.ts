@@ -5,3 +5,4 @@ export type * from './check.ts';
 export type * from './results.ts';
 export type * from './findings.ts';
 export { STACK_CATEGORIES } from './stack.ts';
+export type * from './codemap.ts';

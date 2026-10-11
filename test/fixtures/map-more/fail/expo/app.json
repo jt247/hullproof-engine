@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Notes",
+    "slug": "notes",
+    "scheme": "notesapp",
+    "ios": {
+      "bundleIdentifier": "com.example.notes",
+      "associatedDomains": ["applinks:notes.example.com"]
+    },
+    "android": {
+      "package": "com.example.notes",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "notes.example.com", "pathPrefix": "/n" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    }
+  }
+}

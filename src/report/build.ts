@@ -11,7 +11,7 @@ import type {
 import { checkMessage, ruleMessage } from './messages.ts';
 import { highest, inScope, type Control, type Kit, type Scope } from './kit.ts';
 import { TEST_ARTIFACT_IDS, testCodeReason } from './test-code.ts';
-import { isSecretHit, leadReason, leadTier, loadTiers } from './tiers.ts';
+import { isSecretHit, leadReason, leadTier, leadTierForCheck, loadTiers } from './tiers.ts';
 
 export interface GitState { commit: string; tree: string; clean: boolean }
 export interface BuildInput {
@@ -49,7 +49,7 @@ interface Fail { source: string; sec_ids: string[]; evidence: { file: string; li
 
 // A finding kept for the report and never in results.json or the gate: test code (src/report/test-code.ts), or a lead
 // from a rule whose confidence tier is lead (src/report/tiers.ts).
-interface TestItem { hit?: Hit; check?: CheckResult; ids: string[]; reason: string; kind: 'test' | 'lead' }
+interface TestItem { hit?: Hit; check?: CheckResult; ids: string[]; reason: string; kind: 'test' | 'lead'; total?: number }
 
 // Splits hits and failed checks into what can fail a requirement and what is only reported. In order:
 // 1. A secret (a Gitleaks hit or a rule mapped to a SEC-SECRETS ID) always stays: a live key is a leak wherever it is.
@@ -74,6 +74,18 @@ export function separateTestCode(input: BuildInput): { input: BuildInput; test: 
   }
   const results: CheckResult[] = [];
   for (const r of input.checks.results) {
+    // A check that reads the code map is a lead until it is measured: its FAIL is reported and never fails a requirement.
+    const leadCheck = r.result === 'FAIL' ? leadTierForCheck(r.check_id, tiers) : null;
+    if (leadCheck) {
+      const byFile = new Map<string, typeof r.evidence>();
+      for (const e of r.evidence) byFile.set(e.file, [...(byFile.get(e.file) ?? []), e]);
+      const reason = leadReason(leadCheck, tiers);
+      // Past COLLAPSE_FILES files the check gets one record for all its places (the list stays in checks.json), so a repository
+      // with a thousand routes does not push the findings block past the kit limit.
+      if (byFile.size > COLLAPSE_FILES) test.push({ check: r, ids: r.sec_ids, reason, kind: 'lead', total: r.evidence.length });
+      else for (const f of [...byFile.keys()].sort(cmp)) test.push({ check: { ...r, evidence: byFile.get(f)! }, ids: r.sec_ids, reason, kind: 'lead' });
+      continue;
+    }
     const secret = r.sec_ids.some((id) => id.startsWith('SEC-SECRETS-'));
     const inTest = r.result === 'FAIL' && !secret && !r.sec_ids.some((id) => TEST_ARTIFACT_IDS.has(id)) ? r.evidence.filter((e) => testCodeReason(e.file)) : [];
     const shipped = r.evidence.filter((e) => !inTest.includes(e));
@@ -237,7 +249,7 @@ function buildFindingsWith(all: BuildInput, collapse: number | null): { file: Fi
       fingerprint: `OBS:${fpPath(file)}:${slug(`${isLead ? 'lead' : 'test code'} ${ruleId} ${ts[0].hit?.line ?? ''}`, 14)}`, kind: 'observation', sec_ids: ids,
       title: clip(`${isLead ? 'Lead' : 'Test code'}: ${msg.title}`, 160), where: refs(ev).slice(0, 4),
       note: clip(isLead
-        ? `Lead from rule ${ruleId}, whose confidence tier is lead: ${ts[0].reason}. Read the code; it never holds the gate.${ids.length ? ` If real it fails ${ids.join(', ')}.` : ''}`
+        ? `Lead from ${ts[0].hit ? 'rule' : 'check'} ${ruleId}, whose confidence tier is lead: ${ts[0].reason}. Read the code; it never holds the gate.${ids.length ? ` If real it fails ${ids.join(', ')}.` : ''}${ts[0].total ? ` ${ts[0].total} places in all; the first 4 are listed here and every one is in checks.json.` : ''}`
         : `Test code (${ts[0].reason}): kept as a lead, never in the gate.${ids.length ? ` In shipped code it would fail ${ids.join(', ')}.` : ''} ${msg.fix}`, 400),
       raised_by: ['hullproof-engine'],
     });

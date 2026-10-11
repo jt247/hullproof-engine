@@ -12,6 +12,7 @@ Every command takes the repository path (default the current folder) and `--out 
 | `scan/<tool>.json` | each adapter | `HitsFile` | `schemas/scan-hits.schema.json` | yes |
 | `scan/<tool>.meta.json` | each adapter | `ToolMeta` | `schemas/scan-meta.schema.json` | yes |
 | `checks.json` | check interpreter | `CheckResultsFile` | `schemas/check-results.schema.json` | yes |
+| `codemap.json` | map step (`hullproof map` and `scan`) | `CodeMap` in `src/types/codemap.ts` | `schemas/codemap.schema.json` | yes |
 | `results.json` | report step | `ResultsFile` | `schemas/results.schema.json` | yes |
 | `report.findings.md` | report step | `FindingsFile` inside a `hullproof-findings` block | `schemas/findings.schema.json` | yes |
 | `scan/<tool>.detail.json` | each adapter | `DetailFile` in `src/scanners/types.ts` | none (schema version 0.1.0 inside) | yes |

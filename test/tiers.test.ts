@@ -36,9 +36,9 @@ test('tier file: every rule listed, threshold 0.80, measured rules below it are 
   assert.equal(t.threshold, 0.8);
   for (const r of readRules(DIRS[0], DIRS[1])) assert.ok(t.rules[r.id], `${r.id} has a tier`);
   for (const [id, e] of Object.entries(t.rules)) {
-    if (e.judged >= t.min_judged && e.precision !== null) assert.equal(e.tier, e.precision >= t.threshold ? 'gate' : 'lead', id);
+    if (e.judged >= Math.max(t.min_judged, e.needs_judged ?? 0) && e.precision !== null) assert.equal(e.tier, e.precision >= t.threshold ? 'gate' : 'lead', id);
     if (e.judged > 0) assert.ok(e.evidence && e.date, `${id} names its evidence and date`);
-    if (e.judged < t.min_judged) assert.equal(e.tier, id.startsWith('hullproof-taint-') ? 'lead' : 'gate', `${id} keeps its default`);
+    if (e.judged < Math.max(t.min_judged, e.needs_judged ?? 0)) assert.equal(e.tier, id.startsWith('hullproof-taint-') || id.startsWith('check.map.') ? 'lead' : 'gate', `${id} keeps its default`);
   }
   for (const id of ['hullproof-taint-py-xss', 'hullproof-taint-py-path-traversal', 'hullproof-taint-js-path-traversal']) assert.equal(t.rules[id].tier, 'lead', id);
 });

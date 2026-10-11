@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/codemap.schema.json",
+  "title": "Hullproof Engine code map (codemap.json)",
+  "description": "Every entry point found by reading the code, with the protections, data touches and outbound calls on each, and the confidence of each fact. Sorted, no timestamp, no absolute path. Design: docs/PHASE-2-DESIGN.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "engine_version", "commit", "coverage", "entry_points", "gates", "config", "counts"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "engine_version": {"type": "string", "minLength": 1},
+    "commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "coverage": {"type": "array", "items": {"$ref": "#/$defs/coverage"}},
+    "entry_points": {"type": "array", "items": {"$ref": "#/$defs/entry_point"}},
+    "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}},
+    "config": {
+      "type": "object", "additionalProperties": false, "required": ["supabase", "firebase", "local_vocab", "auth_helper_candidates"],
+      "properties": {
+        "supabase": {"type": ["object", "null"], "additionalProperties": false, "required": ["tables"], "properties": {"tables": {"type": "array", "items": {"$ref": "#/$defs/supabase_table"}}}},
+        "firebase": {"type": ["object", "null"], "additionalProperties": false, "required": ["rules"], "properties": {"rules": {"type": "array", "items": {"$ref": "#/$defs/firebase_rule"}}}},
+        "local_vocab": {"type": "object", "additionalProperties": false, "required": ["auth_helpers", "role_helpers"], "properties": {"auth_helpers": {"type": "array", "items": {"type": "string"}}, "role_helpers": {"type": "array", "items": {"type": "string"}}}},
+        "auth_helper_candidates": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "entry_points", "file", "line"], "properties": {"name": {"type": "string", "minLength": 1}, "entry_points": {"type": "integer", "minimum": 1}, "file": {"type": "string"}, "line": {"type": "integer", "minimum": 1}}}}
+      }
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false, "required": ["entry_points", "by_kind", "by_framework"],
+      "properties": {
+        "entry_points": {"type": "integer", "minimum": 0},
+        "by_kind": {"type": "object"},
+        "by_framework": {"type": "object"}
+      }
+    }
+  },
+  "$defs": {
+    "confidence": {"enum": ["high", "medium", "low"]},
+    "path": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^/\\\\]"},
+    "coverage": {
+      "type": "object", "additionalProperties": false, "required": ["language", "files", "extractor", "status", "entry_points", "note"],
+      "properties": {
+        "language": {"type": "string", "minLength": 1},
+        "files": {"type": "integer", "minimum": 0},
+        "extractor": {"type": ["string", "null"]},
+        "status": {"enum": ["mapped", "partial", "not_mapped"]},
+        "entry_points": {"type": "integer", "minimum": 0},
+        "note": {"type": "string", "minLength": 1}
+      }
+    },
+    "protection": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "scope", "file", "line", "via", "enforced", "confidence"],
+      "properties": {
+        "kind": {"enum": ["session_read", "role_check", "owner_filter", "signature_verify", "rate_limit", "input_validation", "audit_log"]},
+        "scope": {"enum": ["handler", "wrapper", "router", "middleware", "global"]},
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "via": {"type": "string", "minLength": 1},
+        "enforced": {"type": ["boolean", "null"]},
+        "after_parse": {"type": "boolean"},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      }
+    },
+    "read": {
+      "type": "object", "additionalProperties": false, "required": ["source", "line"],
+      "properties": {"source": {"enum": ["body", "query", "params", "headers", "cookies", "form", "file"]}, "line": {"type": "integer", "minimum": 1}}
+    },
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["store", "op", "target", "line", "by_id", "limit_from_request", "request_derived", "owner_scoped", "raw_sql", "sets", "mass_assign", "confidence"],
+      "properties": {
+        "store": {"enum": ["sql", "prisma", "drizzle", "mongo", "supabase", "firebase", "redis", "orm", "filesystem", "object_storage"]},
+        "op": {"enum": ["read", "write", "delete", "unknown"]},
+        "target": {"type": ["string", "null"]},
+        "line": {"type": "integer", "minimum": 1},
+        "by_id": {"type": "boolean"},
+        "limit_from_request": {"type": "boolean"},
+        "request_derived": {"type": "boolean"},
+        "owner_scoped": {"type": "boolean"},
+        "raw_sql": {"type": "boolean"},
+        "sets": {"type": "array", "items": {"type": "string"}},
+        "mass_assign": {"type": "boolean"},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      }
+    },
+    "outbound": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "line", "target", "request_derived", "guarded", "confidence"],
+      "properties": {
+        "kind": {"enum": ["http", "ai_model", "email", "sms", "payment", "process", "redirect", "queue"]},
+        "line": {"type": "integer", "minimum": 1},
+        "target": {"type": "string", "maxLength": 120},
+        "request_derived": {"type": "boolean"},
+        "guarded": {"type": "boolean"},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      }
+    },
+    "entry_point": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "kind", "framework", "file", "line", "end_line", "method", "path", "name", "handler", "confidence", "test_code", "tags", "protections", "reads", "data", "outbound"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["http_route", "webhook", "server_action", "page", "ai_tool", "job", "graphql_resolver", "rpc", "message_consumer", "websocket", "deep_link"]},
+        "framework": {"type": "string", "minLength": 1},
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "end_line": {"type": "integer", "minimum": 1},
+        "method": {"type": ["string", "null"]},
+        "path": {"type": ["string", "null"]},
+        "name": {"type": ["string", "null"]},
+        "handler": {"type": ["object", "null"], "additionalProperties": false, "required": ["file", "line"], "properties": {"file": {"$ref": "#/$defs/path"}, "line": {"type": "integer", "minimum": 1}}},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "test_code": {"type": "boolean"},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "protections": {"type": "array", "items": {"$ref": "#/$defs/protection"}},
+        "reads": {"type": "array", "items": {"$ref": "#/$defs/read"}},
+        "data": {"type": "array", "items": {"$ref": "#/$defs/data"}},
+        "outbound": {"type": "array", "items": {"$ref": "#/$defs/outbound"}}
+      }
+    },
+    "gate": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind", "framework", "file", "line", "paths", "methods", "protections", "confidence"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["middleware", "guard", "router_dependency", "global_pipe", "mount"]},
+        "framework": {"type": "string", "minLength": 1},
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "paths": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "methods": {"type": "array", "items": {"type": "string"}},
+        "protections": {"type": "array", "items": {"$ref": "#/$defs/protection"}},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      }
+    },
+    "supabase_table": {
+      "type": "object", "additionalProperties": false, "required": ["name", "file", "line", "rls_enabled", "columns", "policies", "grants"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "rls_enabled": {"type": ["boolean", "null"]},
+        "columns": {"type": "array", "items": {"type": "string"}},
+        "policies": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["name", "op", "roles", "using", "check", "line", "permissive"],
+            "properties": {
+              "name": {"type": "string"}, "op": {"type": "string"}, "roles": {"type": "array", "items": {"type": "string"}},
+              "using": {"type": ["string", "null"]}, "check": {"type": ["string", "null"]}, "line": {"type": "integer", "minimum": 1}, "permissive": {"type": "boolean"}
+            }
+          }
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["role", "privileges", "columns", "line"],
+            "properties": {"role": {"type": "string"}, "privileges": {"type": "array", "items": {"type": "string"}}, "columns": {"type": ["array", "null"], "items": {"type": "string"}}, "line": {"type": "integer", "minimum": 1}}
+          }
+        }
+      }
+    },
+    "firebase_rule": {
+      "type": "object", "additionalProperties": false, "required": ["service", "file", "line", "path", "ops", "condition", "uses_auth", "owner_bound", "always_true", "owner_wildcard"],
+      "properties": {
+        "service": {"enum": ["firestore", "storage", "realtime"]},
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "path": {"type": "string"},
+        "ops": {"type": "array", "items": {"type": "string"}},
+        "condition": {"type": "string", "maxLength": 200},
+        "uses_auth": {"type": "boolean"},
+        "owner_bound": {"type": "boolean"},
+        "always_true": {"type": "boolean"},
+        "owner_wildcard": {"type": "boolean"}
+      }
+    }
+  }
+}

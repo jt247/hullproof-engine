@@ -8,7 +8,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { Hit } from '../types/index.ts';
 
-export interface TierEntry { tier: 'gate' | 'lead'; precision: number | null; judged: number; evidence: string; date: string | null }
+// needs_judged: a minimum judged count for this entry alone, above the file's min_judged (a decision to wait for more evidence).
+export interface TierEntry { tier: 'gate' | 'lead'; precision: number | null; judged: number; evidence: string; date: string | null; needs_judged?: number }
 export interface TierFile { threshold: number; min_judged: number; rules: Record<string, TierEntry> }
 
 // The tier file sits next to each Semgrep rule folder (rules/tiers.json, and a tier file next to a rule pack). Later folders (the rule
@@ -31,9 +32,19 @@ export function leadTier(h: Hit, t: TierFile): TierEntry | null {
   return e && e.tier === 'lead' ? e : null;
 }
 
+// An engine check that reads the code map (check.map.*) is a lead until a measurement puts it in tiers.json with a precision at
+// or above the threshold. Every other engine check is gate, as before.
+export const isMapCheck = (id: string): boolean => id.startsWith('check.map.');
+export function leadTierForCheck(id: string, t: TierFile): TierEntry | null {
+  if (!isMapCheck(id)) return null;
+  const e = t.rules[id] ?? { tier: 'lead' as const, precision: null, judged: 0, evidence: 'not measured yet', date: null };
+  return e.tier === 'lead' ? e : null;
+}
+
 // Plain English reason for a lead record.
 export function leadReason(e: TierEntry, t: TierFile): string {
   if (e.precision === null || e.judged === 0) return 'this rule has not been measured yet';
   const m = `precision ${e.precision.toFixed(2)} on ${e.judged} judged hits (${e.evidence}, ${e.date})`;
-  return e.judged < t.min_judged ? `${m}, fewer than the ${t.min_judged} needed to change its default` : `${m}, below ${t.threshold.toFixed(2)}`;
+  const need = Math.max(t.min_judged, e.needs_judged ?? 0);
+  return e.judged < need ? `${m}, fewer than the ${need} needed to change its default` : `${m}, below ${t.threshold.toFixed(2)}`;
 }

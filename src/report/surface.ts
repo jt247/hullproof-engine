@@ -1,5 +1,5 @@
 // surface.json: what the scan looked at, by kind of entry point or configuration, so the report can say what was read.
-// Phase 1 has no code map, so this is a file level summary found with the same selectors the checks use.
+// A file level summary found with the same selectors the older checks use. The entry point inventory is in codemap.json.
 import type { CheckContext } from '../checks/context.ts';
 import { handlerFiles } from '../checks/code/shared.ts';
 

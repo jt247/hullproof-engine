@@ -16,7 +16,7 @@ const VERIFY_CALL = /\b((?:\w+\.)?(?:verify\w*|validate\w*[sS]ignature\w*|check\
 // Calls documented by their providers to throw (or raise) on a bad signature, so code after them runs only when valid.
 const THROWING = /constructEvent|construct_event|webhooks\.verify|wh\.verify|Webhook\.construct|unwrap\(|constructEventAsync|validateRequest/;
 
-function scanFile(file: string, text: string): CheckEvidence[] {
+export function scanFile(file: string, text: string): CheckEvidence[] {
   const bad: CheckEvidence[] = [];
   let calls = 0;
   VERIFY_CALL.lastIndex = 0;

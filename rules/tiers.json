@@ -1,6 +1,34 @@
 {
   "min_judged": 3,
   "rules": {
+    "check.map.data-read-without-auth": {
+      "date": "2026-10-11",
+      "evidence": "Juice Shop 0e6d909 and BenchmarkPython f129148, hand checked samples of 20 findings each, seed 20261011, engine a3035af; see bench/PHASE2-MEASURED-2026-10-11.md",
+      "judged": 3,
+      "precision": 0,
+      "tier": "lead"
+    },
+    "check.map.mutating-route-without-auth": {
+      "date": "2026-10-11",
+      "evidence": "Juice Shop 0e6d909 and BenchmarkPython f129148, hand checked samples of 20 findings each, seed 20261011, engine a3035af; see bench/PHASE2-MEASURED-2026-10-11.md",
+      "judged": 27,
+      "precision": 0.44,
+      "tier": "lead"
+    },
+    "check.map.privileged-field-from-request": {
+      "date": "2026-10-11",
+      "evidence": "Juice Shop 0e6d909 and BenchmarkPython f129148, hand checked samples of 20 findings each, seed 20261011, engine a3035af; see bench/PHASE2-MEASURED-2026-10-11.md",
+      "judged": 1,
+      "precision": 0,
+      "tier": "lead"
+    },
+    "check.map.write-by-id-without-owner": {
+      "date": "2026-10-11",
+      "evidence": "Juice Shop 0e6d909 and BenchmarkPython f129148, hand checked samples of 20 findings each, seed 20261011, engine a3035af; see bench/PHASE2-MEASURED-2026-10-11.md",
+      "judged": 1,
+      "precision": 0,
+      "tier": "lead"
+    },
     "hullproof-api-route-no-auth": {
       "date": null,
       "evidence": "not measured yet",

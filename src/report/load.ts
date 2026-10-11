@@ -2,13 +2,14 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { cmp } from '../util.ts';
-import type { CheckResultsFile, FindingsFile, ResultRow, Stack, ToolMeta } from '../types/index.ts';
+import type { CheckResultsFile, CodeMap, FindingsFile, ResultRow, Stack, ToolMeta } from '../types/index.ts';
 import type { ScanInfo } from '../commands/scan.ts';
 import type { SurfaceFile } from './surface.ts';
 
 export interface ScanFolder {
   dir: string; info: ScanInfo; stack: Stack; checks: CheckResultsFile; results: ResultRow[];
   findingsText: string; findings: FindingsFile; metas: ToolMeta[]; surface: SurfaceFile;
+  codemap: CodeMap | null;               // null for a scan folder written before the code map existed
   reasons: Record<string, string | null>; // tool -> plain English reason it did not run, from scan/<tool>.detail.json
 }
 
@@ -34,5 +35,6 @@ export function loadScan(dir: string): ScanFolder {
     reasons, dir, info: json(join(dir, 'scan.json')), stack: json(join(dir, 'stack.json')), checks: json(join(dir, 'checks.json')),
     results: json(join(dir, 'results.json')), findingsText, findings: JSON.parse(block[1]) as FindingsFile, metas,
     surface: json(join(dir, 'surface.json')),
+    codemap: existsSync(join(dir, 'codemap.json')) ? json<CodeMap>(join(dir, 'codemap.json')) : null,
   };
 }
