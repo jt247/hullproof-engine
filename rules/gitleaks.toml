@@ -1,0 +1,256 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/gitleaks.toml).
+#
+# Hullproof gitleaks config.
+#
+# Use it for every scan that produces evidence, with this file and not the repository's own:
+#
+#   gitleaks dir . --redact --no-banner --config tools/hullproof/gitleaks.toml --ignore-gitleaks-allow
+#   gitleaks git . --redact --no-banner --config tools/hullproof/gitleaks.toml --ignore-gitleaks-allow
+#
+# Gitleaks reads ".gitleaks.toml" from the scanned folder when no --config is given, and a repository can use
+# that file (or "gitleaks:allow" comments) to hide its own findings. Passing --config and
+# --ignore-gitleaks-allow stops both. A scan that does not name this file is not Hullproof evidence.
+#
+# This file extends the default rules and adds the secret shapes of the default stack that the default
+# rules do not find. It has NO path allowlist for build output. Folders such as .next, dist, build and
+# .vercel are scanned on purpose, because that is where a secret ends up in the shipped bundle
+# (SEC-SECRETS-001). The only path exclusion is node_modules, which holds third party code.
+#
+# If a scan ends with "scanned ~0 bytes" it scanned nothing. Treat that as NOT ASSESSED.
+#
+# Shape sources. "docs" means the vendor's own documentation states the shape. "lenient" means the prefix is
+# known and the length is a loose range, because no length was verified. "context" means the value has no
+# shape, so the rule needs a nearby name. The tests in tools/hullproof/tests/test_gitleaks_config.py plant
+# one synthetic value per rule and fail if it is not found.
+
+title = "Hullproof gitleaks config"
+
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------------------------------------------
+# Supabase
+# ---------------------------------------------------------------------------------------------------------
+
+# A legacy service role key is a JWT whose payload holds "role":"service_role". The default jwt rule finds
+# every JWT but cannot tell an anon key from a service role key. This rule matches the base64url text of
+# the role claim at all three byte alignments (shape basis: the payload encoding).
+[[rules]]
+id = "hullproof-supabase-service-role-jwt"
+description = "JWT with the service_role claim (bypasses row level security)"
+regex = '''\b(eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*(?:InJvbGUiOiJzZXJ2aWNlX3JvbGUi|Jyb2xlIjoic2VydmljZV9yb2xlI|icm9sZSI6InNlcnZpY2Vfcm9sZS)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]{20,})'''
+secretGroup = 1
+keywords = ["eyj"]
+tags = ["supabase", "jwt", "critical"]
+
+# New style secret key. Supabase documents the form sb_secret_<random>_<checksum>. Publishable keys
+# (sb_publishable_) are public by design and are never matched.
+[[rules]]
+id = "hullproof-supabase-secret-key"
+description = "Supabase secret API key (sb_secret_)"
+regex = '''\b(sb_secret_[A-Za-z0-9_-]{20,})'''
+secretGroup = 1
+keywords = ["sb_secret_"]
+tags = ["supabase", "critical"]
+
+# ---------------------------------------------------------------------------------------------------------
+# Payments
+# ---------------------------------------------------------------------------------------------------------
+
+# Paddle API key. Shape from the Paddle developer docs:
+# ^pdl_(live|sdbx)_apikey_[a-z\d]{26}_[a-zA-Z\d]{22}_[a-zA-Z\d]{3}$ (docs).
+[[rules]]
+id = "hullproof-paddle-api-key"
+description = "Paddle API key (live or sandbox)"
+regex = '''\b(pdl_(?:live|sdbx)_apikey_[a-z0-9]{26}_[A-Za-z0-9]{22}_[A-Za-z0-9]{3})\b'''
+secretGroup = 1
+keywords = ["pdl_"]
+tags = ["paddle", "payments"]
+
+# Paddle webhook signing secret for a notification destination, prefix pdl_ntfset_ (docs). Anyone who holds
+# it can forge webhook calls.
+[[rules]]
+id = "hullproof-paddle-webhook-secret"
+description = "Paddle notification destination secret key"
+regex = '''\b(pdl_ntfset_[a-z0-9]{26}_[A-Za-z0-9]{20,})\b'''
+secretGroup = 1
+keywords = ["pdl_ntfset_"]
+tags = ["paddle", "webhook"]
+
+# Paystack secret keys use the sk_live_ / sk_test_ form with 40 hex characters. The default stripe rule
+# already reports this shape (tested), so no separate rule is added here.
+
+# ---------------------------------------------------------------------------------------------------------
+# Email, hosting, observability
+# ---------------------------------------------------------------------------------------------------------
+
+# Resend key: prefix re_ (docs show re_xxxxxxxxx). Length is lenient. The shape is two alphanumeric runs
+# joined by an underscore, which keeps snake case identifiers out. (lenient)
+[[rules]]
+id = "hullproof-resend-api-key"
+description = "Resend API key"
+regex = '''\b(re_[A-Za-z0-9]{6,12}_[A-Za-z0-9]{20,40})\b'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["re_"]
+tags = ["resend", "email"]
+
+# Render API key: prefix rnd_ followed by an alphanumeric run. (lenient, length not verified)
+[[rules]]
+id = "hullproof-render-api-key"
+description = "Render API key"
+regex = '''\b(rnd_[A-Za-z0-9]{28,40})\b'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["rnd_"]
+tags = ["render"]
+
+# PostHog personal API key (phx_) and project secret API key (phs_), both listed by PostHog as secrets.
+# The project token (phc_) is for browsers and is not matched. (prefix: docs, length lenient)
+[[rules]]
+id = "hullproof-posthog-secret-key"
+description = "PostHog personal or project secret API key"
+regex = '''\b(ph[xs]_[A-Za-z0-9]{30,64})\b'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["phx_", "phs_"]
+tags = ["posthog"]
+
+# Sentry organization auth token (sntrys_). The user token (sntryu_) is covered by a default rule (tested).
+# A DSN is not a secret and is not matched. (prefix: Sentry docs and scanner issue reports, length lenient)
+[[rules]]
+id = "hullproof-sentry-org-auth-token"
+description = "Sentry organization auth token"
+regex = '''\b(sntrys_[A-Za-z0-9+/=_-]{60,})'''
+secretGroup = 1
+keywords = ["sntrys_"]
+tags = ["sentry"]
+
+# OpenAI project, service account and admin keys. The default rule requires an embedded marker string that
+# newer keys may not carry, so this rule matches the documented prefix and a long body. (prefix: lenient,
+# length not verified)
+[[rules]]
+id = "hullproof-openai-project-key"
+description = "OpenAI project, service account or admin API key"
+regex = '''\b(sk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{40,})'''
+secretGroup = 1
+entropy = 3.5
+keywords = ["sk-proj-", "sk-svcacct-", "sk-admin-"]
+tags = ["openai", "ai"]
+
+# Anthropic (sk-ant-) and Google API keys (AIza) are found by default rules (tested), so no extra rule is added.
+
+# ---------------------------------------------------------------------------------------------------------
+# Storage and cache. These values have no prefix, so the rules need a nearby name. A bare value in a
+# minified bundle cannot be found by shape. Use the planted value check in recipes.md for those.
+# ---------------------------------------------------------------------------------------------------------
+
+# Cloudflare R2 secret access key: 64 hex characters, next to a name that mentions r2, cloudflare or s3 and
+# secret. (context)
+[[rules]]
+id = "hullproof-r2-secret-access-key"
+description = "Cloudflare R2 or S3 compatible secret access key (64 hex)"
+regex = '''(?i)(?:r2|cloudflare|s3)[\w.-]{0,30}secret[\w.-]{0,20}["'\s:=]{1,6}["']?([a-f0-9]{64})\b'''
+secretGroup = 1
+keywords = ["r2", "cloudflare", "s3"]
+tags = ["cloudflare", "r2"]
+
+# Upstash REST token or Redis password next to an upstash name. (context)
+[[rules]]
+id = "hullproof-upstash-token"
+description = "Upstash REST token or password"
+regex = '''(?i)upstash[\w.-]{0,40}(?:token|password|passwd)[\w.-]{0,10}["'\s:=]{1,6}["']?([A-Za-z0-9=_-]{30,})'''
+secretGroup = 1
+entropy = 3.5
+keywords = ["upstash"]
+tags = ["upstash"]
+
+# Vercel token next to a vercel name. (context)
+[[rules]]
+id = "hullproof-vercel-token"
+description = "Vercel token next to a vercel name"
+regex = '''(?i)vercel[\w.-]{0,20}(?:token|secret)[\w.-]{0,10}["'\s:=]{1,6}["']?([A-Za-z0-9_-]{24,})'''
+secretGroup = 1
+entropy = 3.5
+keywords = ["vercel"]
+tags = ["vercel"]
+
+# ---------------------------------------------------------------------------------------------------------
+# Connection strings and agent config
+# ---------------------------------------------------------------------------------------------------------
+
+# scheme://user:password@host. Covers Postgres, MySQL, MongoDB, Redis (also Upstash), AMQP and SQL Server.
+# Placeholder passwords are skipped by the rule's own allowlist below.
+[[rules]]
+id = "hullproof-url-with-password"
+description = "Connection URL with a password in the user info part"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|rediss?|amqps?|mssql|sqlserver)://[^\s:@/'"`<>{}$]{1,64}:([^\s@/'"`<>]{3,128})@[A-Za-z0-9.\[\]-]{2,}'''
+secretGroup = 1
+keywords = ["://"]
+tags = ["database", "url"]
+
+[[rules.allowlists]]
+description = "Placeholder passwords in examples"
+regexTarget = "secret"
+regexes = [
+  '''(?i)^(?:password|passwd|pass|pwd|secret|changeme|change-me|your[-_ ]?password|\[your[-_ ]?password\]|postgres|root|admin|user|xxx+|\*+|\.{3}|%s|\$\{?\w+\}?|\{\{.*\}\})$''',
+]
+
+# AWS access key id in a coding agent or MCP config file. The default AWS rule needs the base32 alphabet;
+# this one accepts any uppercase letter or digit after the prefix, and only in agent config paths, where a
+# key does not belong.
+[[rules]]
+id = "hullproof-aws-key-in-agent-config"
+description = "AWS access key id in an MCP or agent settings file"
+path = '''(?i)(^|/)(\.mcp\.json|mcp\.json|\.claude/settings(\.local)?\.json|claude_desktop_config\.json|\.cursor/mcp\.json|\.vscode/mcp\.json|\.windsurf/mcp_config\.json)$'''
+regex = '''\b((?:AKIA|ASIA|AGPA|AIDA|AROA|ANPA|AIPA)[A-Z0-9]{16})\b'''
+secretGroup = 1
+keywords = ["akia", "asia", "agpa", "aida", "aroa", "anpa", "aipa"]
+tags = ["aws", "agent"]
+
+# Any literal secret looking value in an MCP or agent settings file. Values that read from the environment
+# (${VAR}) are skipped by the character class.
+[[rules]]
+id = "hullproof-agent-config-literal-secret"
+description = "Literal key, token, secret or password value in an MCP or agent settings file"
+path = '''(?i)(^|/)(\.mcp\.json|mcp\.json|\.claude/settings(\.local)?\.json|claude_desktop_config\.json|\.cursor/mcp\.json|\.vscode/mcp\.json|\.windsurf/mcp_config\.json)$'''
+regex = '''(?i)"[\w.-]*(?:key|token|secret|password|passwd|credential)[\w.-]*"\s*:\s*"([^"$\s]{16,})"'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["key", "token", "secret", "password", "passwd", "credential"]
+tags = ["agent", "mcp"]
+
+# ---------------------------------------------------------------------------------------------------------
+# Allowlists. Narrow on purpose. Nothing here excludes a folder that ships.
+# ---------------------------------------------------------------------------------------------------------
+
+[[allowlists]]
+description = "Third party code that is not committed source"
+paths = ['''(^|/)node_modules/''']
+
+# Supabase anon JWT. The default jwt rule reports every JWT. A JWT is allowed only when its payload holds
+# "role":"anon" (the public client key). It applies to the default jwt rule only, so the service_role
+# rule above is never affected. The three strings are the base64url text of "role":"anon" at each byte
+# alignment.
+[[allowlists]]
+description = "Supabase anon key (public by design)"
+targetRules = ["jwt"]
+regexTarget = "secret"
+regexes = [
+  '''^eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]*(?:InJvbGUiOiJhbm9uI|Jyb2xlIjoiYW5vbi|icm9sZSI6ImFub24i)[A-Za-z0-9_-]*\.[A-Za-z0-9_-]+$''',
+]
+
+# Supabase publishable key. Public by design.
+[[allowlists]]
+description = "Supabase publishable key (public by design)"
+regexTarget = "secret"
+regexes = ['''^sb_publishable_[A-Za-z0-9_-]{20,}$''']
+
+# The kit's own documents quote example text that the generic rule can match. Only the generic rule is
+# excluded, and only for the kit's markdown. Every other rule still applies to these files.
+[[allowlists]]
+description = "Kit documentation examples (generic rule only)"
+targetRules = ["generic-api-key"]
+paths = ['''(^|/)docs/hullproof/(templates/)?[^/]+\.md$''']

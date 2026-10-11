@@ -1,0 +1,17 @@
+{
+  "category": "runtimes",
+  "entries": [
+    {"id": "bun", "signals": [{"files": ["bun.lockb", "bun.lock", "bunfig.toml"]}, {"files": ["package.json"], "regex": "\"packageManager\"\\s*:\\s*\"bun@", "confidence": "high"}]},
+    {"id": "deno", "signals": [{"files": ["deno.json", "deno.jsonc", "deno.lock"]}]},
+    {"id": "dotnet", "signals": [{"files": ["*.csproj", "*.fsproj", "*.vbproj", "*.sln", "global.json"]}]},
+    {"id": "dart", "signals": [{"files": ["pubspec.yaml"]}]},
+    {"id": "elixir", "signals": [{"files": ["mix.exs"]}]},
+    {"id": "go", "signals": [{"files": ["go.mod"]}]},
+    {"id": "jvm", "signals": [{"files": ["pom.xml", "build.gradle", "build.gradle.kts", "build.sbt"]}]},
+    {"id": "node", "signals": [{"files": ["package.json", ".nvmrc", ".node-version"]}]},
+    {"id": "php", "signals": [{"files": ["composer.json"]}]},
+    {"id": "python", "signals": [{"files": ["pyproject.toml", "requirements*.txt", "setup.py", "setup.cfg", "Pipfile", ".python-version"]}]},
+    {"id": "ruby", "signals": [{"files": ["Gemfile", ".ruby-version"]}]},
+    {"id": "rust", "signals": [{"files": ["Cargo.toml"]}]}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "category": "containers",
+  "entries": [
+    {"id": "docker-compose", "signals": [{"files": ["docker-compose.yml", "docker-compose.yaml", "docker-compose.*.yml", "docker-compose.*.yaml", "compose.yml", "compose.yaml", "compose.*.yml", "compose.*.yaml"]}]},
+    {"id": "dockerfile", "signals": [{"files": ["Dockerfile", "Dockerfile.*", "*.dockerfile", "Containerfile"]}]},
+    {"id": "devcontainer", "signals": [{"files": [".devcontainer.json", ".devcontainer/devcontainer.json"]}]}
+  ]
+}

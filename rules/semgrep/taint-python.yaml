@@ -1,0 +1,414 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Written for the Hullproof Engine from the CWE definitions named in each rule. Not copied or derived from any Semgrep
+# registry rule. Fixtures: test/fixtures/rules/taint-python.py, run by test/rules.test.ts with semgrep --test.
+#
+# Sources are request data in Flask, Django (and Django REST framework) and FastAPI (and Starlette): the request object's
+# fields and the parameters of a function under a route decorator. Taint flows through string building, assignment and
+# calls by default. Each rule names its sanitizers; a project guard is recognised when its name says what it checks.
+rules:
+  - id: hullproof-taint-py-sql-injection
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches the text of a SQL query (CWE-89). Pass the value as a bound parameter, for example
+      cursor.execute("SELECT * FROM t WHERE id = %s", (value,)), and keep the query text constant.
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      sec_ids: [SEC-API-017]
+    pattern-sources:
+      - pattern: flask.request
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.COOKIES
+              - pattern: $REQ.META
+              - pattern: $REQ.FILES
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+              - pattern: $REQ.data
+              - pattern: $REQ.query_params
+              - pattern: $REQ.path_params
+              - pattern: $REQ.json()
+              - pattern: $REQ.body()
+              - pattern: $REQ.form()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(request|req|self\.request)$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  async def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(route|get|post|put|patch|delete|api_route|websocket)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: int(...)
+          - pattern: float(...)
+          - pattern: bool(...)
+          - pattern: uuid.UUID(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $C.execute($Q, ...)
+              - pattern: $C.executemany($Q, ...)
+              - pattern: $C.executescript($Q, ...)
+              - pattern: $C.exec_driver_sql($Q, ...)
+              - pattern: $M.objects.raw($Q, ...)
+              - pattern: $M.objects.extra(..., where=$Q, ...)
+              - pattern: django.db.models.expressions.RawSQL($Q, ...)
+              - pattern: sqlalchemy.text($Q, ...)
+              - pattern: pandas.read_sql($Q, ...)
+              - pattern: pandas.read_sql_query($Q, ...)
+          - focus-metavariable: $Q
+
+  - id: hullproof-taint-py-xss
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data is written into an HTML response without encoding (CWE-79). Render it through an autoescaping template
+      (render_template, Django templates) or encode it with html.escape or markupsafe.escape before it is placed in HTML.
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      sec_ids: [SEC-WEB-031]
+    pattern-sources:
+      - pattern: flask.request
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.COOKIES
+              - pattern: $REQ.META
+              - pattern: $REQ.FILES
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+              - pattern: $REQ.data
+              - pattern: $REQ.query_params
+              - pattern: $REQ.path_params
+              - pattern: $REQ.json()
+              - pattern: $REQ.body()
+              - pattern: $REQ.form()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(request|req|self\.request)$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  async def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(route|get|post|put|patch|delete|api_route|websocket)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: html.escape(...)
+          - pattern: markupsafe.escape(...)
+          - pattern: flask.escape(...)
+          - pattern: django.utils.html.escape(...)
+          - pattern: django.utils.html.conditional_escape(...)
+          - pattern: bleach.clean(...)
+          - pattern: flask.jsonify(...)
+          - pattern: flask.render_template(...)
+          - pattern: django.shortcuts.render(...)
+          - pattern: flask.redirect(...)
+          - pattern: flask.url_for(...)
+          - pattern: flask.send_file(...)
+          - pattern: flask.send_from_directory(...)
+          - pattern: urllib.parse.quote(...)
+          - pattern: int(...)
+          - pattern: float(...)
+          - pattern: bool(...)
+          - pattern: len(...)
+    pattern-sinks:
+      # A Flask view's return value becomes a text/html response when it is a string. Dict and list returns become JSON.
+      - patterns:
+          - pattern-inside: |
+              @$APP.route(...)
+              def $F(...):
+                ...
+          - pattern-either:
+              - pattern: return $X
+              - pattern: return $X, ...
+          - pattern-not: return {...}
+          - pattern-not: return [...]
+          - pattern-not: return {...}, ...
+          - focus-metavariable: $X
+      - patterns:
+          - pattern-either:
+              - pattern: flask.make_response($X, ...)
+              - pattern: flask.Response($X, ...)
+              - pattern: flask.render_template_string($X, ...)
+              - pattern: markupsafe.Markup($X)
+              - pattern: django.http.HttpResponse($X, ...)
+              - pattern: django.utils.safestring.mark_safe($X)
+              - pattern: django.utils.html.format_html($X, ...)
+              - pattern: fastapi.responses.HTMLResponse($X, ...)
+              - pattern: starlette.responses.HTMLResponse($X, ...)
+          - pattern-not: flask.Response($X, ..., mimetype="application/json", ...)
+          - pattern-not: django.http.HttpResponse($X, ..., content_type="application/json", ...)
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-py-command-injection
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches a shell command or chooses the program that runs (CWE-78). Run a fixed program with an
+      argument list and no shell, map the request value to a fixed set of options, or quote it with shlex.quote when a
+      shell cannot be avoided.
+    metadata:
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      sec_ids: [SEC-API-020]
+    pattern-sources:
+      - pattern: flask.request
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.COOKIES
+              - pattern: $REQ.META
+              - pattern: $REQ.FILES
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+              - pattern: $REQ.data
+              - pattern: $REQ.query_params
+              - pattern: $REQ.path_params
+              - pattern: $REQ.json()
+              - pattern: $REQ.body()
+              - pattern: $REQ.form()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(request|req|self\.request)$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  async def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(route|get|post|put|patch|delete|api_route|websocket)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: shlex.quote(...)
+          - pattern: pipes.quote(...)
+          - pattern: int(...)
+          - pattern: float(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.system($X)
+              - pattern: os.popen($X, ...)
+              - pattern: subprocess.getoutput($X)
+              - pattern: subprocess.getstatusoutput($X)
+              - pattern: asyncio.create_subprocess_shell($X, ...)
+              - pattern: subprocess.$F($X, ..., shell=True, ...)
+              - pattern: subprocess.$F([$X, ...], ...)
+              - pattern: subprocess.$F([$SH, "-c", $X, ...], ...)
+              - patterns:
+                  - pattern: os.$EXEC($X, ...)
+                  - metavariable-regex:
+                      metavariable: $EXEC
+                      regex: ^(execl|execle|execlp|execv|execve|execvp|execvpe|spawnl|spawnlp|spawnv|spawnvp)$
+          - focus-metavariable: $X
+      - patterns:
+          - pattern: subprocess.$F($X, ...)
+          - pattern-not: subprocess.$F([...], ...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(run|call|check_call|check_output|Popen)$
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-py-path-traversal
+    languages: [python]
+    mode: taint
+    severity: WARNING
+    message: >-
+      Request data becomes part of a file path the server opens, writes, lists or deletes (CWE-22). Reduce the name with
+      os.path.basename or werkzeug secure_filename, or resolve the full path and check that it stays inside a fixed folder
+      before using it.
+    metadata:
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      sec_ids: []
+    pattern-sources:
+      - pattern: flask.request
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.COOKIES
+              - pattern: $REQ.META
+              - pattern: $REQ.FILES
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+              - pattern: $REQ.data
+              - pattern: $REQ.query_params
+              - pattern: $REQ.path_params
+              - pattern: $REQ.json()
+              - pattern: $REQ.body()
+              - pattern: $REQ.form()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(request|req|self\.request)$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  async def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(route|get|post|put|patch|delete|api_route|websocket)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: os.path.basename(...)
+          - pattern: werkzeug.utils.secure_filename(...)
+          - pattern: werkzeug.security.safe_join(...)
+          - pattern: werkzeug.utils.safe_join(...)
+          - pattern: flask.safe_join(...)
+          - pattern: int(...)
+          - pattern: uuid.UUID(...)
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i).*(safe|allow|valid|guard|check|verify|within|inside|contain).*
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: open($X, ...)
+              - pattern: io.open($X, ...)
+              - pattern: codecs.open($X, ...)
+              - pattern: pathlib.Path($X, ...)
+              - pattern: pathlib.Path($BASE, $X, ...)
+              - pattern: flask.send_file($X, ...)
+              - patterns:
+                  - pattern: os.$OSF($X, ...)
+                  - metavariable-regex:
+                      metavariable: $OSF
+                      regex: ^(remove|unlink|rmdir|removedirs|mkdir|makedirs|listdir|scandir|stat|chmod|chown|rename|replace|walk|open|truncate)$
+              - patterns:
+                  - pattern-either:
+                      - pattern: shutil.$SHF($X, ...)
+                      - pattern: shutil.$SHF($SRC, $X, ...)
+                  - metavariable-regex:
+                      metavariable: $SHF
+                      regex: ^(copy|copyfile|copy2|copytree|move|rmtree)$
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-py-ssrf
+    languages: [python]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data chooses the address of an outbound request the server makes (CWE-918). Allow only http and https,
+      resolve the host, refuse private, loopback, link local and metadata addresses, connect to the checked address and
+      do not follow redirects unchecked. A value that only fills a path or query under a fixed host is not matched.
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      sec_ids: [SEC-API-035]
+    pattern-sources:
+      - pattern: flask.request
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.GET
+              - pattern: $REQ.POST
+              - pattern: $REQ.COOKIES
+              - pattern: $REQ.META
+              - pattern: $REQ.FILES
+              - pattern: $REQ.body
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+              - pattern: $REQ.data
+              - pattern: $REQ.query_params
+              - pattern: $REQ.path_params
+              - pattern: $REQ.json()
+              - pattern: $REQ.body()
+              - pattern: $REQ.form()
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(request|req|self\.request)$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  def $F(..., $P, ...):
+                    ...
+              - pattern-inside: |
+                  @$APP.$VERB(...)
+                  async def $F(..., $P, ...):
+                    ...
+          - metavariable-regex:
+              metavariable: $VERB
+              regex: ^(route|get|post|put|patch|delete|api_route|websocket)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: int(...)
+          - pattern: urllib.parse.quote(...)
+          - pattern: urllib.parse.urlencode(...)
+      # A fixed scheme and host before the request value: the value can only change the path or the query.
+      - patterns:
+          - pattern: '"$URL" + $Y'
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^https?://[^/]+/
+      - pattern-regex: f["']https?://[^/"'{]+/[^"']*["']
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i).*(safe|allow|valid|guard|check|verify).*
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern: requests.$M($X, ...)
+                      - pattern: httpx.$M($X, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(get|post|put|patch|delete|head|options)$
+              - pattern: requests.request($METHOD, $X, ...)
+              - pattern: httpx.request($METHOD, $X, ...)
+              - pattern: urllib.request.urlopen($X, ...)
+              - pattern: urllib.request.Request($X, ...)
+              - pattern: urllib3.PoolManager(...).request($METHOD, $X, ...)
+              - pattern: http.client.HTTPConnection($X, ...)
+              - pattern: http.client.HTTPSConnection($X, ...)
+          - focus-metavariable: $X

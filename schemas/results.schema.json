@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/results.schema.json",
+  "title": "Hullproof Engine per requirement results (results.json)",
+  "description": "The JSON form the kit gate (hullproof-gate.mjs, loadResults) already reads: an array of {id, result, notes}, sorted by id, one row per requirement ID.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "result", "notes"],
+    "properties": {
+      "id": {"type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$"},
+      "result": {"type": "string", "pattern": "^(FAIL|PASS \\(static\\)|NOT APPLICABLE|NOT ASSESSED: (NEEDS DASHBOARD|NEEDS BUILD|NEEDS DYNAMIC TEST|ASK OWNER|ATTESTATION|UNKNOWN))$"},
+      "notes": {"type": "string", "maxLength": 600, "description": "NOT APPLICABLE needs a reason here. Plain text, no secret values."}
+    }
+  }
+}

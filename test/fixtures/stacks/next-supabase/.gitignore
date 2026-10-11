@@ -1,0 +1,3 @@
+secret-build/
+*.local.ts
+!keep.local.ts

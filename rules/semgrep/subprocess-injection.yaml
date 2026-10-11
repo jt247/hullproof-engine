@@ -1,0 +1,163 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/subprocess-injection.yaml).
+#
+rules:
+  - id: hullproof-subprocess-shell-string
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A command string that is not a constant goes to a shell. Anything in the string can add commands.
+      Call the program directly with an argument array (execFile, spawn with no shell), pass user values
+      only as separate arguments after a double dash, and never concatenate them into the command.
+    patterns:
+      - pattern-either:
+          - pattern: exec($C, ...)
+          - pattern: execSync($C, ...)
+          - pattern: execAsync($C, ...)
+          - pattern: execPromise($C, ...)
+          - pattern: execP($C, ...)
+          - pattern: execaCommand($C, ...)
+          - pattern: execaCommandSync($C, ...)
+          - pattern: promisify(exec)($C, ...)
+          - pattern: util.promisify(exec)($C, ...)
+          - pattern: shell.exec($C, ...)
+          - pattern: shelljs.exec($C, ...)
+          - patterns:
+              - pattern-either:
+                  - pattern: $CP.exec($C, ...)
+                  - pattern: $CP.execSync($C, ...)
+              - metavariable-regex:
+                  metavariable: $CP
+                  regex: ^(cp|child_process|childProcess|proc|node_child_process|cproc)$
+          - patterns:
+              - pattern: '$F($C, ..., {..., shell: true, ...})'
+              - metavariable-regex:
+                  metavariable: $F
+                  regex: ^(?:\w+\.)?(?:execFile|execFileSync|spawn|spawnSync|execa|execaSync)$
+      - metavariable-regex:
+          metavariable: $C
+          regex: (?s)^(?!(?:"[^"\\]*"|'[^'\\]*'|`[^`$\\]*`)$)
+    metadata:
+      sec_ids: [SEC-API-020]
+      severity_hint: CRITICAL
+      confidence: MEDIUM
+      note: >-
+        Any command that is not a plain string literal. A command built only from constants held in
+        variables is a false positive. The bare exec name is matched only as a function call, so
+        RegExp exec on a variable is not matched.
+  - id: hullproof-subprocess-shell-interpreter
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A shell interpreter is started with a script argument that is not a constant. This is the same as
+      running a command string through a shell. Run the target program directly with an argument array.
+    patterns:
+      - pattern-either:
+          - pattern: $F($SH, [..., "-c", $S, ...], ...)
+          - pattern: $F($SH, [..., "/c", $S, ...], ...)
+          - pattern: $F($SH, [..., "/C", $S, ...], ...)
+          - pattern: $F($SH, [..., "-Command", $S, ...], ...)
+          - pattern: $F($SH, [..., "-lc", $S, ...], ...)
+      - metavariable-regex:
+          metavariable: $SH
+          regex: (?i)^["'`](?:.*[/\\])?(?:sh|bash|zsh|dash|ksh|fish|cmd|cmd\.exe|powershell|powershell\.exe|pwsh|pwsh\.exe)["'`]$
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(?:\w+\.)?(?:execFile|execFileSync|spawn|spawnSync|execa|execaSync|fork)$
+      - metavariable-regex:
+          metavariable: $S
+          regex: (?s)^(?!(?:"[^"\\]*"|'[^'\\]*'|`[^`$\\]*`)$)
+    metadata:
+      sec_ids: [SEC-API-020]
+      severity_hint: CRITICAL
+      confidence: HIGH
+  - id: hullproof-subprocess-arg-no-separator
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A program is started with an argument that is not a constant, and the argument list has no double
+      dash separator. If the value starts with a dash the program reads it as an option (for example git
+      ls-remote with an upload pack option runs a command). Put the double dash before user values, check
+      that the value does not start with a dash, and pin the allowed options.
+    patterns:
+      - pattern-either:
+          - pattern: $F($BIN, [..., $A, ...], ...)
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(?:\w+\.)?(?:execFile|execFileSync|spawn|spawnSync|execa|execaSync)$
+      - metavariable-regex:
+          metavariable: $A
+          regex: (?s)^(?!(?:"[^"\\]*"|'[^'\\]*'|`[^`$\\]*`)$)
+      - pattern-not: $F($BIN, [..., "--", ...], ...)
+      - metavariable-regex:
+          metavariable: $BIN
+          regex: (?is)^(?!["'`](?:.*[/\\])?(?:sh|bash|zsh|dash|ksh|fish|cmd|cmd\.exe|powershell|powershell\.exe|pwsh|pwsh\.exe)["'`]$)
+    metadata:
+      sec_ids: [SEC-API-020]
+      severity_hint: HIGH
+      confidence: LOW
+      note: >-
+        Every call that passes a non constant list entry without a double dash anywhere in the list.
+        Many calls pass a constant held in a variable, or a program that has no dash options. Review each.
+        Option injection is a program specific issue: git, curl, tar, ssh, rsync, ffmpeg and convert are
+        the usual targets.
+  - id: hullproof-subprocess-request-data
+    languages: [typescript, javascript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches a subprocess call. Run a fixed program with a fixed argument list, put user
+      values after a double dash, and allowlist the values that are allowed.
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.body
+              - pattern: $R.query
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.url
+              - pattern: $R.nextUrl.searchParams
+              - pattern: $R.searchParams
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx|event|context|c\.req|req\.raw)$
+      - patterns:
+          - pattern-either:
+              - pattern: await $R.json()
+              - pattern: await $R.formData()
+              - pattern: await $R.text()
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx|c\.req|req\.raw)$
+      - patterns:
+          - pattern-either:
+              - pattern: $S.get(...)
+              - pattern: $S.getAll(...)
+          - metavariable-regex:
+              metavariable: $S
+              regex: ^(searchParams|formData|params|query|\w+\.searchParams|data|fd)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $F($C, ...)
+              - pattern: $F($C2, [...], ...)
+          - focus-metavariable: $C
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?:\w+\.)?(?:exec|execSync|execFile|execFileSync|spawn|spawnSync|execa|execaSync|execaCommand|fork)$
+      - patterns:
+          - pattern: $F($BIN, [..., $A, ...], ...)
+          - focus-metavariable: $A
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?:\w+\.)?(?:exec|execSync|execFile|execFileSync|spawn|spawnSync|execa|execaSync|fork)$
+    pattern-sanitizers:
+      - pattern: Number(...)
+      - pattern: parseInt(...)
+      - pattern: parseFloat(...)
+    metadata:
+      sec_ids: [SEC-API-020]
+      severity_hint: CRITICAL
+      confidence: HIGH
+      note: Taint within one file. The parameter names of the request object are matched by name (req, request, ctx, event).

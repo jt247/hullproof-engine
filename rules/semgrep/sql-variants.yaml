@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/sql-variants.yaml).
+#
+rules:
+  - id: hullproof-sql-raw-non-literal
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A raw SQL helper receives a value that is not a constant string. Raw helpers send the text
+      to the database as code. Bind values as parameters, and take identifiers from a fixed
+      allowlist.
+    patterns:
+      - pattern-either:
+          - pattern: sql.raw($Y)
+          - pattern: sql.unsafe($Y, ...)
+          - pattern: Prisma.raw($Y)
+          - patterns:
+              - pattern-either:
+                  - pattern: $DB.raw($Y, ...)
+                  - pattern: $DB.unsafe($Y, ...)
+                  - pattern: $DB.literal($Y)
+              - metavariable-regex:
+                  metavariable: $DB
+                  regex: (?i)^(?:.*\.)?(?:\w*knex\w*|\w*sequelize\w*|\w*db|db\w*|trx|tx|pool|database|conn|connection|kx|sql|pg|client|query)$
+          - patterns:
+              - pattern: $DB.$M($Y, ...)
+              - metavariable-regex:
+                  metavariable: $M
+                  regex: ^(whereRaw|andWhereRaw|orWhereRaw|havingRaw|orderByRaw|groupByRaw|joinRaw|selectRaw|fromRaw|\$queryRawUnsafe|\$executeRawUnsafe|queryRawUnsafe|executeRawUnsafe)$
+      - metavariable-pattern:
+          metavariable: $Y
+          patterns:
+            - pattern: $Z
+            - pattern-not: '"..."'
+            - pattern-not: "`...`"
+    metadata:
+      sec_ids: [SEC-API-017]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: Fires on any non constant argument, including a variable that holds a reviewed constant. Read the variable.
+  - id: hullproof-sql-tagged-template-misuse
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A function that is built for tagged templates is called with an ordinary string. The
+      interpolated value is pasted into the SQL text and is not bound. Write sql`...${value}...`
+      without the parentheses so the library binds it, or call the unsafe variant on purpose with
+      an allowlisted value.
+    patterns:
+      - pattern-either:
+          - pattern: sql(`...${$Y}...`)
+          - pattern: sql("..." + $Y)
+          - pattern: $DB.sql(`...${$Y}...`)
+          - pattern: $DB.$queryRaw(`...${$Y}...`)
+          - pattern: $DB.$executeRaw(`...${$Y}...`)
+          - pattern: Prisma.sql(`...${$Y}...`)
+          - pattern: $T`...${sql.raw($Y)}...`
+          - pattern: $T`...${Prisma.raw($Y)}...`
+          - pattern: $T`...${$DB.unsafe($Y)}...`
+    metadata:
+      sec_ids: [SEC-API-017]
+      severity_hint: CRITICAL
+      confidence: MEDIUM
+      note: Covers postgres.js, drizzle and Prisma call shapes. The raw helper inside a tagged template is also flagged.
+  - id: hullproof-sql-built-string-reaches-query
+    languages: [typescript, javascript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      A string that starts like a SQL statement and holds a concatenated or interpolated value
+      reaches a query call. Bind the value as a parameter.
+    pattern-sources:
+      - pattern-regex: '(?is)(?<![\w$])`\s*(?:select|insert\s+into|update|delete\s+from|with\s+\w+\s+as|merge\s+into|create|alter|drop|truncate|call|exec|execute)\b[^`]*\$\{[^`]*`'
+      - patterns:
+          - pattern-either:
+              - pattern: '$L + $Y'
+              - pattern: '[$L, ...].join(...)'
+              - pattern: '$L.concat(...)'
+          - metavariable-regex:
+              metavariable: $L
+              regex: '(?is)^["''`]\s*(?:select|insert|update|delete|with|merge|create|alter|drop|truncate|call|exec|execute)\b'
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $X.$M($Q, ...)
+              - pattern: $M($Q, ...)
+          - focus-metavariable: $Q
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(query|execute|exec|run|get|all|prepare|any|one|many|none|oneOrNone|manyOrNone|result|raw|unsafe|each|map|task|tx|\$queryRawUnsafe|\$executeRawUnsafe|queryRawUnsafe|executeRawUnsafe|whereRaw|havingRaw|orderByRaw|selectRaw|joinRaw|runSql|runQuery|rawQuery|literal)$
+    metadata:
+      sec_ids: [SEC-API-017]
+      severity_hint: CRITICAL
+      confidence: MEDIUM
+      note: >-
+        Follows a built string through a variable inside one function or file. The source must
+        start with a SQL keyword, which keeps get and run style method names from firing on
+        unrelated strings.

@@ -1,0 +1,4 @@
+stages:
+  - test
+test:
+  script: python manage.py test

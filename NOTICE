@@ -1,0 +1,32 @@
+Hullproof Engine
+Copyright 2026 Rare Phronesis Limited
+
+This product is licensed under the Apache License, Version 2.0. The full text is in the LICENSE file.
+
+Hullproof is an independent project. It is not affiliated with or endorsed by Semgrep, Gitleaks, OSV, Trivy, OWASP or any other organisation or vendor named in this repository. The Apache License 2.0 does not give you rights to the Hullproof name.
+
+External scanners
+
+The engine calls these programs when they are installed on your machine. It does not bundle, copy, modify or install any of them, and it does not copy their rule sets or databases. You get each one from its own project and use it under its own licence.
+
+1. Semgrep (the open source command line program). Licence: LGPL-2.1-only. https://semgrep.dev and https://github.com/semgrep/semgrep
+2. Gitleaks. Licence: MIT. https://github.com/gitleaks/gitleaks
+3. OSV Scanner. Licence: Apache-2.0. https://github.com/google/osv-scanner
+4. Trivy. Licence: Apache-2.0. https://github.com/aquasecurity/trivy
+
+Licences are as listed by the Homebrew formula for each program on 2026-10-11. Check the project itself for the current terms.
+
+Rules in this repository
+
+1. The files in `rules/semgrep/` named taint-go, taint-java, taint-javascript, taint-php and taint-python were written for this engine from the CWE definitions named in each rule. No rule from the Semgrep registry was copied or used as a base.
+2. The other Semgrep rule files in `rules/semgrep/` were written for Hullproof and are copied from the Hullproof Free kit (https://github.com/jt247/hullproof-free), which is Apache-2.0 and has the same owner.
+3. `rules/gitleaks.toml` is copied from the same kit. It extends the default Gitleaks rules (MIT, the Gitleaks authors) and adds secret shapes for the default stack of Hullproof.
+4. The Trivy and OSV Scanner mapping tables in `src/mapping/maps/` were built by running each tool and reading its own output. Their rule ids are facts about those tools, kept here so a hit can be mapped to a Hullproof requirement.
+
+Benchmark material
+
+The benchmark files in `bench/` describe runs on public vulnerable projects and on the Hullproof demo repository (https://github.com/jt247/hullproof-demo). No code from those projects is included in this repository. The project names and licences are listed in the benchmark files themselves.
+
+The Hullproof requirements
+
+The requirement texts and the controls file are not part of this repository. They live in the Hullproof Free kit, which carries its own licences (see its LICENSING.md).

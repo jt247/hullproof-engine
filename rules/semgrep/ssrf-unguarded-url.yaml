@@ -1,0 +1,137 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/ssrf-unguarded-url.yaml).
+#
+rules:
+  - id: hullproof-ssrf-request-data-to-url
+    languages: [typescript, javascript]
+    mode: taint
+    options:
+      taint_assume_safe_functions: true
+    severity: ERROR
+    message: >-
+      Request data reaches an outbound HTTP call, or the second argument form of new URL, with no guard
+      call in between. A caller can point the server at internal hosts, cloud metadata addresses or
+      redirects. Resolve the host, reject private, loopback, link local and mapped addresses, connect to
+      the address that was checked, and do not follow redirects without checking each hop. If the value
+      is only a path or a numeric id, encode it with encodeURIComponent or Number.
+    # Guard calls are recognized by name. Edit the regex in the sanitizer below to match the project's own
+    # guard function. A guard that is not on the list shows up as a finding, which is the safe failure.
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.body
+              - pattern: $R.query
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.nextUrl
+              - pattern: $R.nextUrl.searchParams
+              - pattern: $R.searchParams
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx|event|context|c\.req|req\.raw)$
+      - patterns:
+          - pattern-either:
+              - pattern: await $R.json()
+              - pattern: await $R.formData()
+              - pattern: await $R.text()
+              - pattern: $R.json()
+              - pattern: $R.formData()
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx|c\.req|req\.raw)$
+      - patterns:
+          - pattern-either:
+              - pattern: $S.get(...)
+              - pattern: $S.getAll(...)
+          - metavariable-regex:
+              metavariable: $S
+              regex: (?s)^(?:.*\.)?(?:searchParams|params|query)$|^(?:formData|data|fd)$
+    pattern-sinks:
+      - patterns:
+          - pattern: $F($U, ...)
+          - focus-metavariable: $U
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(fetch|axios|got|ky|ofetch|\$fetch|needle|superagent|request|undici\.(fetch|request|stream)|axios\.(get|post|put|patch|delete|head|options|request)|got\.(get|post|put|patch|delete|head|stream)|ky\.(get|post|put|patch|delete|head)|https?\.(get|request)|page\.goto|\w+\.goto)$
+      - patterns:
+          - pattern: new URL($U, $BASE)
+          - focus-metavariable: $U
+    pattern-sanitizers:
+      - by-side-effect: true
+        patterns:
+          - pattern: $G($X, ...)
+          - focus-metavariable: $X
+          - metavariable-regex:
+              metavariable: $G
+              regex: (?i)(safe|ssrf|allowlist|allowedhost|ispublic|assertpublic|validateurl|validatehost|asserturl|checkurl|guard|resolveandcheck|publicurl|externalurl)
+      - pattern: encodeURIComponent(...)
+      - pattern: encodeURI(...)
+      - pattern: Number(...)
+      - pattern: parseInt(...)
+      - pattern: parseFloat(...)
+    metadata:
+      sec_ids: [SEC-API-035, SEC-API-034]
+      severity_hint: CRITICAL
+      confidence: MEDIUM
+      note: >-
+        Taint within one file. Does not follow values across files or through function parameters
+        that are not request objects. Host allowlist checks written inline (an if on the hostname) are
+        not recognized, so those show as findings to be closed by reading the check.
+  - id: hullproof-ssrf-url-built-from-base
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A fixed base URL is joined to a value by concatenation. If the value comes from a caller, it can
+      add an at sign, dot dot segments or a query string and change the host or path that is called.
+      Encode path segments with encodeURIComponent, or build the URL with new URL and check its origin.
+    patterns:
+      - pattern-either:
+          - pattern: $F($BASE + $X, ...)
+          - pattern: $F($BASE + "/" + $X, ...)
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(fetch|axios|got|ky|ofetch|\$fetch|undici\.(fetch|request)|axios\.(get|post|put|patch|delete|request))$
+      - metavariable-regex:
+          metavariable: $BASE
+          regex: (?i)^[\w.]*(base|api|host|origin|endpoint|baseurl|root)\w*$
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?s)^(?!["'`])(?!\s*(?:encodeURIComponent|encodeURI|Number|parseInt)\s*\()
+    metadata:
+      sec_ids: [SEC-API-034, SEC-API-035]
+      severity_hint: MEDIUM
+      confidence: LOW
+      note: >-
+        Concatenation only. Template literals that join a base and an id are very common and are not
+        matched here to keep noise low. A reviewer should read any outbound URL that is built from a caller value.
+  - id: hullproof-ssrf-stored-url
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      An outbound call uses a URL property from a stored record or an options object (a customer webhook
+      endpoint, a callback address, a feed address). The address was supplied by a user earlier, so it is
+      request data that was saved. Apply the same host checks at the moment of connection, not only when the
+      address was saved, and do not follow redirects without checking each hop.
+    patterns:
+      - pattern-either:
+          - pattern: $F($O.$P, ...)
+          - pattern: $F($O.$P)
+      - metavariable-regex:
+          metavariable: $F
+          regex: ^(fetch|axios|got|ky|ofetch|\$fetch|needle|superagent|undici\.(fetch|request)|axios\.(get|post|put|patch|delete|head|request)|got\.(get|post|put|patch|delete|head|stream)|https?\.(get|request))$
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?i)^(url|webhookurl|callbackurl|endpoint|endpointurl|targeturl|hookurl|feedurl|href|uri)$
+      - metavariable-regex:
+          metavariable: $O
+          regex: (?s)^(?!(?:window|document|location|response|res|resp|result|self|this|process|req|request|ctx|event|body|query|params|import\.meta|import_meta|new URL)\b)
+    metadata:
+      sec_ids: [SEC-API-035, SEC-API-034]
+      severity_hint: HIGH
+      confidence: LOW
+      note: >-
+        Name based lead. It finds the common customer webhook shape that the request taint rule cannot see
+        because the value comes from a database row. Confirm whether a guard runs at connection time.

@@ -1,0 +1,25 @@
+{
+  "id": "check.db.rls-every-table",
+  "sec_ids": [
+    "SEC-DB-001"
+  ],
+  "applies_when": {},
+  "op": "sql_every_table_has",
+  "params": {
+    "files": [
+      "supabase/migrations/**/*.sql",
+      "**/migrations/**/*.sql",
+      "supabase/schema.sql",
+      "**/schema.sql"
+    ],
+    "schemas": [
+      "public"
+    ]
+  },
+  "on_true": "NOT ASSESSED: NEEDS DYNAMIC TEST",
+  "on_false": "FAIL",
+  "fixtures": {
+    "pass": "test/fixtures/checks/rls-every-table/pass",
+    "fail": "test/fixtures/checks/rls-every-table/fail"
+  }
+}

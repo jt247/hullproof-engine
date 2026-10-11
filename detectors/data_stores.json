@@ -1,0 +1,38 @@
+{
+  "category": "data_stores",
+  "entries": [
+    {"id": "aws-rds", "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"aws_(db_instance|rds_cluster)\"", "confidence": "high"}]},
+    {"id": "azure-cosmos-db", "deps": {"npm": ["@azure/cosmos"], "pypi": ["azure-cosmos"], "nuget": ["Microsoft.Azure.Cosmos"]}, "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"azurerm_cosmosdb_", "confidence": "high"}]},
+    {"id": "azure-database-mysql", "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"azurerm_mysql_", "confidence": "high"}]},
+    {"id": "azure-database-postgres", "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"azurerm_postgresql_", "confidence": "high"}]},
+    {"id": "azure-sql", "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"azurerm_(mssql|sql)_(server|database)\"", "confidence": "high"}]},
+    {"id": "dynamodb", "deps": {"npm": ["@aws-sdk/client-dynamodb", "@aws-sdk/lib-dynamodb", "dynamoose"]}, "signals": [
+      {"files": ["*.tf"], "regex": "^\\s*resource\\s+\"aws_dynamodb_table\"", "confidence": "high"},
+      {"files": ["*.py"], "regex": "boto3\\.(resource|client)\\(\\s*['\"]dynamodb['\"]"},
+      {"files": ["*.yaml", "*.yml", "*.json", "*.template"], "regex": "AWS::DynamoDB::Table", "confidence": "high"}]},
+    {"id": "elasticsearch", "deps": {"npm": ["@elastic/elasticsearch"], "pypi": ["elasticsearch"]}},
+    {"id": "firebase-realtime-database", "deps": {"pub": ["firebase_database"], "npm": ["@react-native-firebase/database"]}, "imports": {"js": ["firebase/database", "firebase-admin/database"]}, "signals": [{"files": ["database.rules.json"]}]},
+    {"id": "firestore", "deps": {"pub": ["cloud_firestore"], "pypi": ["google-cloud-firestore"], "npm": ["@react-native-firebase/firestore", "@google-cloud/firestore"]}, "imports": {"js": ["firebase/firestore", "firebase-admin/firestore"]}, "signals": [{"files": ["firestore.rules", "firestore.indexes.json"]}]},
+    {"id": "google-cloud-sql", "deps": {"npm": ["@google-cloud/cloud-sql-connector"], "pypi": ["cloud-sql-python-connector"]}, "signals": [{"files": ["*.tf"], "regex": "^\\s*resource\\s+\"google_sql_database_instance\"", "confidence": "high"}]},
+    {"id": "mongodb", "deps": {"npm": ["mongodb", "mongoose"], "pypi": ["pymongo", "motor", "mongoengine"], "go": ["go.mongodb.org/mongo-driver*"], "rubygems": ["mongo", "mongoid"], "maven": ["org.mongodb*"], "nuget": ["MongoDB.Driver"]}, "signals": [
+      {"files": ["docker-compose*.yml", "docker-compose*.yaml", "compose.yml", "compose.yaml"], "regex": "^\\s*image:\\s*['\"]?mongo(:|['\"]?\\s*$)"},
+      {"files": ["*.prisma"], "regex": "provider\\s*=\\s*\"mongodb\"", "confidence": "high"}]},
+    {"id": "mssql", "deps": {"npm": ["mssql", "tedious"], "nuget": ["Microsoft.Data.SqlClient", "System.Data.SqlClient"], "pypi": ["pymssql"]}, "signals": [{"files": ["*.prisma"], "regex": "provider\\s*=\\s*\"sqlserver\"", "confidence": "high"}]},
+    {"id": "mysql", "deps": {"npm": ["mysql", "mysql2"], "pypi": ["pymysql", "mysqlclient", "mysql-connector-python", "aiomysql"], "go": ["github.com/go-sql-driver/mysql"], "rubygems": ["mysql2"], "maven": ["mysql:mysql-connector-java", "com.mysql:mysql-connector-j"], "nuget": ["MySql.Data", "MySqlConnector"]}, "signals": [
+      {"files": ["docker-compose*.yml", "docker-compose*.yaml", "compose.yml", "compose.yaml"], "regex": "^\\s*image:\\s*['\"]?(mysql|mariadb)(:|['\"]?\\s*$)"},
+      {"files": ["*.prisma"], "regex": "provider\\s*=\\s*\"mysql\"", "confidence": "high"}]},
+    {"id": "neon", "deps": {"npm": ["@neondatabase/serverless"]}},
+    {"id": "oracle-database", "deps": {"npm": ["oracledb"], "pypi": ["oracledb", "cx-oracle"]}},
+    {"id": "planetscale", "deps": {"npm": ["@planetscale/database"]}},
+    {"id": "postgres", "deps": {"npm": ["pg", "postgres", "pg-promise", "@vercel/postgres"], "pypi": ["psycopg2", "psycopg2-binary", "psycopg", "asyncpg"], "go": ["github.com/lib/pq", "github.com/jackc/pgx*"], "rubygems": ["pg"], "maven": ["org.postgresql:postgresql"], "nuget": ["Npgsql"], "cargo": ["tokio-postgres", "postgres"], "hex": ["postgrex"]}, "imports": {"python": ["psycopg2", "psycopg", "asyncpg"]}, "signals": [
+      {"files": ["docker-compose*.yml", "docker-compose*.yaml", "compose.yml", "compose.yaml"], "regex": "^\\s*image:\\s*['\"]?(postgres|postgis/postgis)(:|['\"]?\\s*$)"},
+      {"files": ["*.prisma"], "regex": "provider\\s*=\\s*\"(postgresql|postgres|cockroachdb)\"", "confidence": "high"}]},
+    {"id": "redis", "deps": {"npm": ["redis", "ioredis", "@upstash/redis"], "pypi": ["redis"], "go": ["github.com/redis/go-redis*", "github.com/go-redis/redis*"], "rubygems": ["redis"], "maven": ["redis.clients:jedis", "io.lettuce:lettuce-core"], "nuget": ["StackExchange.Redis"]}, "signals": [
+      {"files": ["docker-compose*.yml", "docker-compose*.yaml", "compose.yml", "compose.yaml"], "regex": "^\\s*image:\\s*['\"]?(redis|valkey/valkey)(:|['\"]?\\s*$)"}]},
+    {"id": "sqlite", "deps": {"npm": ["sqlite3", "better-sqlite3", "sqlite", "expo-sqlite"], "pypi": ["aiosqlite"], "go": ["github.com/mattn/go-sqlite3", "modernc.org/sqlite"], "rubygems": ["sqlite3"], "maven": ["org.xerial:sqlite-jdbc"], "nuget": ["Microsoft.Data.Sqlite"], "cargo": ["rusqlite"], "pub": ["sqflite"]}, "imports": {"python": ["sqlite3"]}, "signals": [
+      {"files": ["*.prisma"], "regex": "provider\\s*=\\s*\"sqlite\"", "confidence": "high"},
+      {"files": ["*.sqlite", "*.sqlite3"], "confidence": "medium"}]},
+    {"id": "supabase", "deps": {"npm": ["@supabase/supabase-js", "@supabase/ssr"], "pypi": ["supabase"], "pub": ["supabase_flutter"]}, "signals": [{"files": ["**/supabase/config.toml"]}, {"files": ["**/supabase/migrations/*.sql"]}]},
+    {"id": "turso", "deps": {"npm": ["@libsql/client"], "pypi": ["libsql-client", "libsql"]}}
+  ]
+}

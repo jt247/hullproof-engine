@@ -1,0 +1,185 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/eval-or-new-function.yaml).
+#
+rules:
+  - id: hullproof-eval-or-new-function
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Dynamic code evaluation. Remove it, or prove the input is a constant. Never evaluate request
+      data or model output.
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: (0, eval)(...)
+          - pattern: (0, $G.eval)(...)
+          - pattern: $G.eval(...)
+          - pattern: new Function(...)
+          - pattern: Function(...)
+          - pattern: $G.Function(...)
+          - pattern: new $G.Function(...)
+          - pattern: Function.prototype.constructor(...)
+          - pattern: Reflect.construct(Function, ...)
+          - pattern: Reflect.apply(eval, ...)
+          - pattern: Reflect.apply(Function, ...)
+          - pattern: vm.runInNewContext(...)
+          - pattern: vm.runInThisContext(...)
+          - pattern: vm.runInContext(...)
+          - pattern: vm.compileFunction(...)
+          - pattern: new vm.Script(...)
+          - pattern: new Script(...)
+          - pattern: new vm.SourceTextModule(...)
+          - pattern: $VM.runInNewContext(...)
+          - pattern: $VM.runInThisContext(...)
+          - pattern: $VM.runInContext(...)
+          - pattern: $VM.compileFunction(...)
+          - pattern: new $VM.Script(...)
+          - pattern: setTimeout("...", ...)
+          - pattern: setInterval("...", ...)
+          - pattern: setTimeout($S + $T, ...)
+          - pattern: setInterval($S + $T, ...)
+          - pattern: setTimeout(`...${$X}...`, ...)
+          - pattern: setInterval(`...${$X}...`, ...)
+          - pattern: setTimeout($S as any, ...)
+          - pattern: setInterval($S as any, ...)
+          - pattern: setTimeout($S as string, ...)
+          - pattern: setInterval($S as string, ...)
+          - pattern: setTimeout(String(...), ...)
+          - pattern: setTimeout($S.toString(), ...)
+      - pattern-not: eval("...")
+      - pattern-not: new Function(..., "...")
+      - pattern-not: Function("...")
+      - pattern-not: $G.eval("...")
+      - pattern-not: new vm.Script("...")
+      - pattern-not: new Script("...")
+      - pattern-not: new $VM.Script("...")
+      - pattern-not: vm.compileFunction("...")
+      - pattern-not: $VM.compileFunction("...")
+      - pattern-not: vm.runInContext("...", ...)
+      - pattern-not: vm.runInNewContext("...", ...)
+      - pattern-not: vm.runInThisContext("...")
+    metadata:
+      sec_ids: [SEC-API-021, SEC-WEB-031]
+      severity_hint: HIGH
+      confidence: HIGH
+      note: >-
+        Covers direct and indirect eval, the Function constructor (also through Reflect and a
+        global object), vm run and compile calls, and string timers. The global receiver match
+        ($G.eval) is broad and also fires on any object with an eval method.
+  - id: hullproof-eval-through-alias
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      eval or the Function constructor is copied to another name and then called. This hides a
+      dynamic code call from name based review. Remove it.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $F = eval;
+              ...
+              $F($X, ...);
+          - pattern: |
+              $F = Function;
+              ...
+              $F($X, ...);
+          - pattern: |
+              $F = Function;
+              ...
+              new $F($X, ...);
+          - pattern: |
+              $F = $G.eval;
+              ...
+              $F($X, ...);
+          - pattern: $A.constructor.constructor($X)
+          - pattern: (() => {}).constructor($X)
+          - pattern: (function () {}).constructor($X)
+          - pattern: (async () => {}).constructor($X)
+      - pattern-not: $A.constructor.constructor("...")
+    metadata:
+      sec_ids: [SEC-API-021]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: Same block alias only. An alias passed through a function parameter or an import is not followed.
+  - id: hullproof-expression-library-eval
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A library that interprets text as code or as a template is called with a non constant value.
+      Expression and template engines run attacker text with the process's powers. Compile only
+      reviewed constants, or evaluate with a sandbox that has no access to globals.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $M.evaluate($X, ...)
+                  - pattern: $M.parse($X).evaluate(...)
+                  - pattern: $M.compile($X)
+                  - pattern: $M.template($X, ...)
+                  - pattern: $M.render($X, ...)
+                  - pattern: $M.renderString($X, ...)
+                  - pattern: $M.renderToString($X, ...)
+                  - pattern: $M.run($X, ...)
+              - metavariable-regex:
+                  metavariable: $M
+                  regex: ^(math|mathjs|parser|expr|jexl|jsonata|_|lodash|ejs|pug|jade|Handlebars|handlebars|hbs|nunjucks|env|Mustache|mustache|doT|dot|liquid|engine|vm2|sandbox|VM)$
+          - pattern: jsonata($X)
+          - pattern: new Function($X)
+          - pattern: new VM(...).run($X)
+          - pattern: new NodeVM(...).run($X)
+          - pattern: new Parser().evaluate($X)
+          - pattern: new Parser().parse($X)
+          - pattern: new Jexl().eval($X)
+          - patterns:
+              - pattern-inside: |
+                  import {..., evaluate, ...} from "mathjs";
+                  ...
+              - pattern: evaluate($X, ...)
+          - patterns:
+              - pattern-inside: |
+                  import {..., compile, ...} from "handlebars";
+                  ...
+              - pattern: compile($X, ...)
+      - metavariable-pattern:
+          metavariable: $X
+          patterns:
+            - pattern-not: '"..."'
+            - pattern-not: "`...`"
+    metadata:
+      sec_ids: [SEC-API-021]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: >-
+        Server template and expression engines (SEC-API-021).
+        Receiver names are matched by a regex over common import names. Rename the alias or edit the regex.
+  - id: hullproof-dynamic-module-path
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A module is loaded from a computed path. If any part comes from a request, a database row or a
+      file, the caller chooses which code runs. Load from a fixed map of allowed names instead.
+    patterns:
+      - pattern-either:
+          - pattern: require($X)
+          - pattern: import($X)
+          - pattern: createRequire(...)($X)
+          - pattern: module.require($X)
+      - metavariable-pattern:
+          metavariable: $X
+          patterns:
+            - pattern-not: '"..."'
+            - pattern-not: "`...`"
+            - pattern-not: path.join(__dirname, "...")
+            - pattern-not: path.resolve(__dirname, "...")
+            - pattern-not: |
+                `./...${$Y}...`
+            - pattern-not: |
+                `../...${$Y}...`
+      - pattern-not: require.resolve(...)
+    metadata:
+      sec_ids: [SEC-API-021]
+      severity_hint: MEDIUM
+      confidence: LOW
+      note: >-
+        Relative template paths with a fixed directory prefix are skipped because a bundler limits
+        them to that folder. Confirm the variable part cannot contain dot dot segments.

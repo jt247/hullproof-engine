@@ -1,0 +1,43 @@
+{
+  "category": "iac",
+  "entries": [
+    {"id": "arm", "signals": [{"files": ["*.json"], "regex": "schema\\.management\\.azure\\.com/schemas/[^\"]*deploymentTemplate", "confidence": "high", "attrs": {"clouds": "azure"}}]},
+    {"id": "bicep", "signals": [{"files": ["*.bicep"], "attrs": {"clouds": "azure"}}]},
+    {"id": "cdk", "deps": {"npm": ["aws-cdk-lib", "@aws-cdk/*", "aws-cdk"], "pypi": ["aws-cdk-lib"]}, "signals": [{"files": ["cdk.json"], "attrs": {"clouds": "aws"}}]},
+    {"id": "cdktf", "deps": {"npm": ["cdktf"], "pypi": ["cdktf"]}, "signals": [{"files": ["cdktf.json"]}]},
+    {"id": "cloudformation", "signals": [
+      {"files": ["*.yaml", "*.yml", "*.json", "*.template"], "regex": "AWSTemplateFormatVersion", "confidence": "high", "attrs": {"clouds": "aws"}},
+      {"files": ["*.yaml", "*.yml", "*.json", "*.template"], "regex": "^\\s*\"?Type\"?\\s*:\\s*['\"]?AWS::[A-Za-z0-9]+::", "all": ["^\\s*\"?Resources\"?\\s*:"], "confidence": "high", "attrs": {"clouds": "aws"}}]},
+    {"id": "docker-compose", "signals": [{"files": ["docker-compose.yml", "docker-compose.yaml", "docker-compose.*.yml", "docker-compose.*.yaml", "compose.yml", "compose.yaml", "compose.*.yml", "compose.*.yaml"]}]},
+    {"id": "helm", "signals": [{"files": ["Chart.yaml"], "regex": "^apiVersion:\\s*v[12]", "all": ["^name:"], "confidence": "high"}]},
+    {"id": "kubernetes", "signals": [{"files": ["*.yaml", "*.yml"], "regex": "^kind:\\s*(Deployment|Service|Pod|StatefulSet|DaemonSet|Ingress|ConfigMap|Secret|Job|CronJob|Namespace|Role|ClusterRole|RoleBinding|ClusterRoleBinding|ServiceAccount|NetworkPolicy|PersistentVolumeClaim|HorizontalPodAutoscaler|ReplicaSet|PodDisruptionBudget)\\s*$", "all": ["^apiVersion:\\s*\\S+"], "confidence": "high"}]},
+    {"id": "kustomize", "signals": [{"files": ["kustomization.yaml", "kustomization.yml", "Kustomization"]}]},
+    {"id": "opentofu", "signals": [{"files": ["*.tofu"]}]},
+    {"id": "pulumi", "deps": {"npm": ["@pulumi/*"], "pypi": ["pulumi", "pulumi-*"], "go": ["github.com/pulumi/pulumi*"]}, "signals": [
+      {"files": ["Pulumi.yaml", "Pulumi.yml"]},
+      {"files": ["package.json"], "regex": "\"@pulumi/aws(x)?\"", "confidence": "high", "attrs": {"clouds": "aws"}},
+      {"files": ["package.json"], "regex": "\"@pulumi/azure(-native)?\"", "confidence": "high", "attrs": {"clouds": "azure"}},
+      {"files": ["package.json"], "regex": "\"@pulumi/gcp\"", "confidence": "high", "attrs": {"clouds": "google-cloud"}}]},
+    {"id": "sam", "signals": [
+      {"files": ["*.yaml", "*.yml", "*.json", "*.template"], "regex": "Transform\"?\\s*:\\s*\\[?\\s*['\"]?AWS::Serverless", "confidence": "high", "attrs": {"clouds": "aws"}},
+      {"files": ["samconfig.toml"], "attrs": {"clouds": "aws"}}]},
+    {"id": "serverless-framework", "signals": [
+      {"files": ["serverless.yml", "serverless.yaml", "serverless.ts", "serverless.js"]},
+      {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*aws\\b", "confidence": "high", "attrs": {"clouds": "aws"}},
+      {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*azure\\b", "confidence": "high", "attrs": {"clouds": "azure"}},
+      {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*google\\b", "confidence": "high", "attrs": {"clouds": "google-cloud"}}]},
+    {"id": "terraform", "signals": [
+      {"files": ["*.tf", "*.tf.json", ".terraform.lock.hcl"]},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"aws(_|\")", "confidence": "high", "attrs": {"clouds": "aws"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"(azurerm|azuread|azapi)(_|\")", "confidence": "high", "attrs": {"clouds": "azure"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"google(-beta)?(_|\")", "confidence": "high", "attrs": {"clouds": "google-cloud"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"alicloud(_|\")", "confidence": "high", "attrs": {"clouds": "alibaba-cloud"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"oci(_|\")", "confidence": "high", "attrs": {"clouds": "oracle-cloud"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"ibm(_|\")", "confidence": "high", "attrs": {"clouds": "ibm-cloud"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"digitalocean(_|\")", "confidence": "high", "attrs": {"clouds": "digitalocean"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"cloudflare(_|\")", "confidence": "high", "attrs": {"clouds": "cloudflare"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"heroku(_|\")", "confidence": "high", "attrs": {"clouds": "heroku"}},
+      {"files": ["*.tf"], "regex": "^\\s*(provider|resource|data)\\s+\"vercel(_|\")", "confidence": "high", "attrs": {"clouds": "vercel"}}]},
+    {"id": "terragrunt", "signals": [{"files": ["terragrunt.hcl"]}]}
+  ]
+}

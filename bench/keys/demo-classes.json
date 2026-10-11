@@ -1,0 +1,43 @@
+{
+  "about": "Defect class patterns for the hullproof demo key (the demo answer key; the version that lists a requirement ID for every flaw is private, and the published DEMO-ANSWER-KEY.md in the hullproof-demo repository hides the Pro IDs, so for the Pro flaws a finding matches by these patterns). A finding matches a flaw's class when it names one of the flaw's SEC IDs from the key, or when its text matches one of these patterns (case insensitive). Patterns for flaws that share a file are written to tell them apart. not_planted lists what the key says is done correctly on purpose; a finding that matches one and no planted flaw is a flagged false positive.",
+  "flaws": {
+    "F01": {"class": "missing row level security", "patterns": ["row[ -]level security", "\\bRLS\\b", "anon(ymous)?[^.\\n]{0,40}(read|select|access|grant)"]},
+    "F02": {"class": "client writes privileged fields", "patterns": ["(role|plan)[^.\\n]{0,60}(form|client|own|self|user[- ]supplied)", "(own|self)[^.\\n]{0,30}(role|plan)", "privileged column"]},
+    "F03": {"class": "missing authentication", "patterns": ["no auth", "unauthenticated", "without (login|authentication)", "needs no login", "anonymous (caller|user|request|get)", "public (export|endpoint)"]},
+    "F04": {"class": "missing owner check (IDOR)", "patterns": ["owner (check|filter)", "\\bIDOR\\b", "direct object", "another user", "across users"]},
+    "F05": {"class": "SQL injection", "patterns": ["SQL", "inject"]},
+    "F06": {"class": "webhook verification and replay", "patterns": ["signature", "replay", "fails? open", "event id", "dedup", "amount"]},
+    "F07": {"class": "server side request forgery", "patterns": ["SSRF", "request forgery", "arbitrary URL", "any URL", "fetch[a-z]* (any|arbitrary) (URL|address)", "user (supplied )?URL"]},
+    "F08": {"class": "hardcoded secret", "patterns": ["hard[- ]?coded", "committed", "in source", "signing (secret|credential|key)", "credential committed"]},
+    "F09": {"class": "missing server side admin check", "patterns": ["(any|every) (signed[- ]in|authenticated|logged[- ]in) user", "only (checks|that) (a |the )?(user is signed in|session exists|session)", "presence check", "not (that they are|an) admin", "no (server[- ]side )?(admin|role) check", "checks? only (that|for) a (session|cookie)", "admin (check|access)[^.\\n]{0,40}(browser|client|middleware)"]},
+    "F10": {"class": "service role key in client code", "patterns": ["service[- ]role", "NEXT_PUBLIC"]},
+    "F11": {"class": "credential written to logs", "patterns": ["(token|session|credential)[^.\\n]{0,40}(logged|logs|console)", "(log|logs|print)[^.\\n]{0,40}(token|session|credential)"]},
+    "F12": {"class": "CORS reflects origin", "patterns": ["CORS", "reflects? (any |arbitrary )?origin", "\\bOrigin\\b"]},
+    "F13": {"class": "AI tool without owner check", "patterns": ["(no|without|skips?|omits?|ignores?)[^.\\n]{0,30}(owner|caller)", "another user'?s? note", "read_note"]},
+    "F14": {"class": "prompt injection into tools", "patterns": ["prompt injection", "inject[a-z]*[^.\\n]{0,30}tool", "tool[^.\\n]{0,20}inject", "(note|text|content|prompt)[^.\\n]{0,40}(decides|selects?|chooses|triggers?|controls|steer)[^.\\n]{0,30}tool", "(user|human|per[- ]action|explicit) confirmation", "(without|no) (user )?confirmation", "email[^.\\n]{0,30}(any|arbitrary) (address|recipient)", "untrusted[^.\\n]{0,30}(text|content|prompt)"]},
+    "F15": {"class": "CI expression injection", "patterns": ["pull[- ]request title", "\\bPR title", "pull_request_target", "expression (injection|expansion)", "shell (step|injection)"]},
+    "P01": {"class": "no login rate limit or lockout", "patterns": ["rate[- ]limit", "lockout", "brute[- ]force", "throttl", "unlimited (guess|attempt)", "failed attempt"]},
+    "P02": {"class": "weak password policy", "patterns": ["password[^.\\n]{0,40}(length|six|6|policy|breach)", "(six|6)[- ]character", "breached[- ]password"]},
+    "P03": {"class": "cookie flags", "patterns": ["HttpOnly", "Secure (flag|attribute)", "__Host", "cookie[^.\\n]{0,40}(flag|prefix|secure|attribute)"]},
+    "P04": {"class": "security headers absent", "patterns": ["\\bCSP\\b", "Content-Security-Policy", "frame[- ](protection|options|ancestors)", "nosniff", "referrer[- ]policy"]},
+    "P05": {"class": "stack trace returned", "patterns": ["stack trace", "stack", "(exception|error) (message|detail)s?[^.\\n]{0,30}(client|response)"]},
+    "P06": {"class": "unsupported framework line", "patterns": ["unsupported", "end of (support|life)", "\\bEOL\\b", "out of support", "13\\.4"]},
+    "P07": {"class": "no lockfile", "patterns": ["lock ?file", "npm install", "npm ci", "unpinned (dependencies|install)"]},
+    "P08": {"class": "actions pinned by tag", "patterns": ["(pinned|pin|referenced) by (tag|version)", "tag[- ]pinned", "(full|commit) (SHA|hash)", "mutable action", "pin (actions|to)"]},
+    "P09": {"class": "write all CI token", "patterns": ["write[- ]all", "write[- ]everything", "excessive token", "token permission", "permissions[^.\\n]{0,20}write"]},
+    "P10": {"class": "no AI input, output or time caps", "patterns": ["(input|output|prompt|size|length|token)s? (cap|limit|bound|max)", "max(imum)?[ _-]?(output )?tokens?", "timeout", "unbounded (input|prompt|question)", "not bounded", "no (size|token|time) (cap|limit)"]},
+    "P11": {"class": "upload without size or type limit", "patterns": ["upload", "file (size|type)", "content[- ]type"]},
+    "P12": {"class": "open redirect", "patterns": ["open redirect", "redirect", "\\bnext\\b (value|param)"]},
+    "P13": {"class": "no audit record for admin actions", "patterns": ["audit (record|log|trail|event)", "security event", "auditable"]},
+    "P14": {"class": "no self service account deletion", "patterns": ["delet[a-z]*[^.\\n]{0,40}(own|their) account", "self[- ]service (account )?delet", "self[- ]deletion", "cannot delete (their|its|the user'?s?) own"]},
+    "P15": {"class": "unbounded page size", "patterns": ["page size", "pagination", "no maximum", "unbounded (limit|page)", "\\blimit\\b[^.\\n]{0,30}(query|maximum|bound)"]}
+  },
+  "not_planted": [
+    {"id": "NP1", "label": "webhook signature compared in constant time", "files": ["src/lib/payfake.ts"], "patterns": ["timing", "constant[- ]time", "timingSafeEqual"]},
+    {"id": "NP2", "label": "passwords hashed with scrypt", "files": ["src/lib/fakeAuth.ts"], "patterns": ["scrypt[^.\\n]{0,60}(weak|cost|below|default|parameter|floor)", "(weak|insecure|unsalted|fast) (password )?hash", "hash[a-z]*[^.\\n]{0,40}(weak|insecure|below the floor)"]},
+    {"id": "NP3", "label": "per user daily AI request budget", "files": ["src/app/api/ai/assistant/route.ts"], "patterns": ["budget", "daily (limit|quota|request)", "usage counter", "in[- ]memory", "process[- ](local|state|memory)", "resets? on restart"]},
+    {"id": "NP4", "label": "downloads served as attachment with nosniff", "files": ["src/app/api/files/[id]/route.ts"], "patterns": ["nosniff", "Content-Disposition", "attachment", "\\bCSP\\b", "sandbox", "content[- ]type"]},
+    {"id": "NP5", "label": "file download has an owner check", "files": ["src/app/api/files/[id]/route.ts"], "patterns": ["owner", "another user", "\\bIDOR\\b"]},
+    {"id": "NP6", "label": "parameterized queries outside the search route", "files": ["src/app/actions/profile.ts", "src/app/api/admin/users/route.ts", "src/app/api/files/route.ts", "src/app/api/notes/route.ts", "src/app/api/notes/export/route.ts", "src/lib/session.ts"], "patterns": ["SQL injection", "injectable", "interpolat[a-z]* into (the )?(SQL|query)"]}
+  ]
+}

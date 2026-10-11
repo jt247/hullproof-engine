@@ -1,0 +1,317 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Written for the Hullproof Engine from the CWE definitions named in each rule. Not copied or derived from any Semgrep
+# registry rule. Fixtures: test/fixtures/rules/taint-java.java, run by test/rules.test.ts with semgrep --test.
+#
+# Sources are request data in Java servlets (javax and jakarta HttpServletRequest) and Spring MVC (parameters bound
+# with @RequestParam, @PathVariable, @RequestBody, @RequestHeader, @CookieValue, @ModelAttribute, @MatrixVariable).
+# Taint flows through string building, assignment and calls by default. A project guard is recognised when its name
+# says what it checks.
+rules:
+  - id: hullproof-taint-java-sql-injection
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches the text of a SQL or JPQL query (CWE-89). Use a PreparedStatement with ? placeholders and
+      setString or setInt, a named parameter in JPA, or JdbcTemplate with an argument array, and keep the query text
+      constant.
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      sec_ids: [SEC-API-017]
+    pattern-sources:
+      - patterns:
+          - pattern: (HttpServletRequest $R).$M(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getInputStream|getReader|getPathInfo|getRequestURI|getRequestURL|getPart|getParts)$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RET $METHOD(..., @$ANN $T $P, ...) { ... }
+              - pattern: |
+                  $RET $METHOD(..., @$ANN(...) $T $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $ANN
+              regex: ^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|MatrixVariable|RequestPart)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: java.util.UUID.fromString(...)
+
+      - patterns:
+          - pattern: $ESC(...)
+          - metavariable-regex:
+              metavariable: $ESC
+              regex: (?i)^(.*\.)?(encodeForSQL|escapeSql)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern: $S.executeQuery($Q, ...)
+                      - pattern: $S.executeUpdate($Q, ...)
+                      - pattern: $S.executeLargeUpdate($Q, ...)
+                      - pattern: $S.addBatch($Q)
+                      - pattern: $S.prepareStatement($Q, ...)
+                      - pattern: $S.prepareCall($Q, ...)
+                      - pattern: $S.nativeSQL($Q)
+                      - pattern: $S.createQuery($Q, ...)
+                      - pattern: $S.createNativeQuery($Q, ...)
+                      - pattern: $S.createSQLQuery($Q, ...)
+                      - pattern: $S.queryForObject($Q, ...)
+                      - pattern: $S.queryForList($Q, ...)
+                      - pattern: $S.queryForMap($Q, ...)
+                      - pattern: $S.queryForRowSet($Q, ...)
+                      - pattern: $S.batchUpdate($Q, ...)
+              - patterns:
+                  - pattern-either:
+                      - pattern: $S.execute($Q, ...)
+                      - pattern: $S.query($Q, ...)
+                      - pattern: $S.update($Q, ...)
+                  - metavariable-regex:
+                      metavariable: $S
+                      regex: (?i).*(stmt|statement|^st$|^ps$|conn|connection|jdbc|template|session|^db$).*
+          - focus-metavariable: $Q
+
+  - id: hullproof-taint-java-xss
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data is written into the HTTP response body without encoding (CWE-79). Render it through a template that
+      escapes by default, or encode it for its HTML context (for example Encode.forHtml from the OWASP Java Encoder)
+      before it is written.
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      sec_ids: [SEC-WEB-031]
+    pattern-sources:
+      - patterns:
+          - pattern: (HttpServletRequest $R).$M(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getInputStream|getReader|getPathInfo|getRequestURI|getRequestURL|getPart|getParts)$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RET $METHOD(..., @$ANN $T $P, ...) { ... }
+              - pattern: |
+                  $RET $METHOD(..., @$ANN(...) $T $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $ANN
+              regex: ^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|MatrixVariable|RequestPart)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: java.util.UUID.fromString(...)
+
+      - patterns:
+          - pattern: $ESC(...)
+          - metavariable-regex:
+              metavariable: $ESC
+              regex: (?i).*(escape|encode|sanitiz|forhtml).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: (HttpServletResponse $RES).getWriter().$P(..., $X, ...)
+              - pattern: (HttpServletResponse $RES).getOutputStream().$P(..., $X, ...)
+              - pattern: (java.io.PrintWriter $W).$P(..., $X, ...)
+              - pattern: (javax.servlet.ServletOutputStream $W).$P(..., $X, ...)
+              - pattern: (jakarta.servlet.ServletOutputStream $W).$P(..., $X, ...)
+          - metavariable-regex:
+              metavariable: $P
+              regex: ^(print|println|write|format|printf|append)$
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-java-command-injection
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches an operating system command (CWE-78). Run a fixed program through ProcessBuilder with a
+      separate argument list and no shell, and map the request value to a fixed set of options.
+    metadata:
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      sec_ids: [SEC-API-020]
+    pattern-sources:
+      - patterns:
+          - pattern: (HttpServletRequest $R).$M(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getInputStream|getReader|getPathInfo|getRequestURI|getRequestURL|getPart|getParts)$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RET $METHOD(..., @$ANN $T $P, ...) { ... }
+              - pattern: |
+                  $RET $METHOD(..., @$ANN(...) $T $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $ANN
+              regex: ^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|MatrixVariable|RequestPart)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: java.util.UUID.fromString(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: Runtime.getRuntime().exec($X, ...)
+              - pattern: (Runtime $RT).exec($X, ...)
+              - pattern: new ProcessBuilder($X, ...)
+              - pattern: new ProcessBuilder(..., $X)
+              - pattern: (ProcessBuilder $PB).command($X, ...)
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-java-path-traversal
+    languages: [java]
+    mode: taint
+    severity: WARNING
+    message: >-
+      Request data becomes part of a file path the server opens, writes, lists or deletes (CWE-22). Reduce the name
+      with FilenameUtils.getName, or resolve the canonical path and check that it starts with a fixed root folder
+      before using it.
+    metadata:
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      sec_ids: []
+    pattern-sources:
+      - patterns:
+          - pattern: (HttpServletRequest $R).$M(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getInputStream|getReader|getPathInfo|getRequestURI|getRequestURL|getPart|getParts)$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RET $METHOD(..., @$ANN $T $P, ...) { ... }
+              - pattern: |
+                  $RET $METHOD(..., @$ANN(...) $T $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $ANN
+              regex: ^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|MatrixVariable|RequestPart)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: java.util.UUID.fromString(...)
+
+      - pattern-either:
+          - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+          - pattern: FilenameUtils.getName(...)
+
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify|within|inside|contain)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new File($X, ...)
+              - pattern: new File($P, $X)
+              - pattern: new java.io.File($X, ...)
+              - pattern: new java.io.File($P, $X)
+              - pattern: new FileInputStream($X, ...)
+              - pattern: new FileOutputStream($X, ...)
+              - pattern: new FileReader($X, ...)
+              - pattern: new FileWriter($X, ...)
+              - pattern: new RandomAccessFile($X, ...)
+              - pattern: Paths.get($X, ...)
+              - pattern: Paths.get($P, ..., $X, ...)
+              - pattern: Path.of($X, ...)
+              - pattern: Path.of($P, ..., $X, ...)
+              - pattern: (java.nio.file.Path $BASE).resolve($X)
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-java-ssrf
+    languages: [java]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data chooses the address of an outbound request the server makes (CWE-918). Allow only http and https,
+      resolve the host, refuse private, loopback, link local and metadata addresses, connect to the checked address
+      and check every redirect. A value that only fills a path or query under a fixed host is not matched.
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      sec_ids: [SEC-API-035]
+    pattern-sources:
+      - patterns:
+          - pattern: (HttpServletRequest $R).$M(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getInputStream|getReader|getPathInfo|getRequestURI|getRequestURL|getPart|getParts)$
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RET $METHOD(..., @$ANN $T $P, ...) { ... }
+              - pattern: |
+                  $RET $METHOD(..., @$ANN(...) $T $P, ...) { ... }
+          - metavariable-regex:
+              metavariable: $ANN
+              regex: ^(RequestParam|PathVariable|RequestBody|RequestHeader|CookieValue|ModelAttribute|MatrixVariable|RequestPart)$
+          - focus-metavariable: $P
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: java.util.UUID.fromString(...)
+
+      - patterns:
+          - pattern: '"$URL" + $Y'
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^https?://[^/]+/
+      - pattern: java.net.URLEncoder.encode(...)
+      - pattern: URLEncoder.encode(...)
+
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new URL($X)
+              - pattern: new java.net.URL($X)
+              - pattern: URI.create($X)
+              - pattern: java.net.URI.create($X)
+              - pattern: new HttpGet($X)
+              - pattern: new HttpPost($X)
+              - pattern: new HttpPut($X)
+              - pattern: new HttpDelete($X)
+              - pattern: HttpRequest.newBuilder($X)
+              - patterns:
+                  - pattern: $RT.$M($X, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(getForObject|getForEntity|postForObject|postForEntity|postForLocation|exchange|put|delete|headForHeaders|optionsForAllow|uri)$
+                  - metavariable-regex:
+                      metavariable: $RT
+                      regex: (?i).*(rest|template|client|webclient|builder|spec).*
+          - focus-metavariable: $X

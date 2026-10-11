@@ -1,0 +1,333 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Written for the Hullproof Engine from the CWE definitions named in each rule. Not copied or derived from any Semgrep
+# registry rule. Fixtures: test/fixtures/rules/taint-go.go, run by test/rules.test.ts with semgrep --test.
+#
+# Sources are request data in net/http (an *http.Request), gorilla/mux and chi route variables, Gin (*gin.Context) and
+# Echo (echo.Context). Taint flows through string building, fmt.Sprintf, assignment and calls by default. A project
+# guard is recognised when its name says what it checks.
+rules:
+  - id: hullproof-taint-go-sql-injection
+    languages: [go]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches the text of a SQL query (CWE-89). Pass values as query arguments with placeholders
+      (db.Query("... WHERE id = $1", id)) and keep the query text constant; with GORM, use Where with ? placeholders.
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      sec_ids: [SEC-API-017]
+    pattern-sources:
+      - patterns:
+          - pattern: '($R : *http.Request).$M(...)'
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(FormValue|PostFormValue|Cookie|Cookies|FormFile|MultipartReader|Referer|UserAgent)$
+      - patterns:
+          - pattern: '($R : *http.Request).$F'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(URL|Form|PostForm|MultipartForm|Header|Body|RequestURI|Host)$
+      - pattern: mux.Vars(...)
+      - pattern: chi.URLParam(...)
+      - patterns:
+          - pattern-either:
+              - pattern: '($C : *gin.Context).$G(...)'
+              - pattern: '($C : echo.Context).$G(...)'
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|Params|PostForm|DefaultPostForm|PostFormArray|GetPostForm|GetHeader|Cookie|FormValue|QueryParam|QueryParams|FormParams|GetRawData|FormFile|ShouldBind|ShouldBindJSON|ShouldBindQuery|Bind|BindJSON)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseUint(...)
+          - pattern: strconv.ParseFloat(...)
+          - pattern: strconv.ParseBool(...)
+          - pattern: uuid.Parse(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern: $DB.$M($Q, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(Query|QueryRow|Exec|Prepare|Queryx|QueryRowx|MustExec|NamedExec|NamedQuery|Raw|Where|Order|Having|Joins)$
+              - patterns:
+                  - pattern: $DB.$M($DEST, $Q, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(Get|Select)$
+              - patterns:
+                  - pattern: $DB.$M($CTX, $Q, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(QueryContext|QueryRowContext|ExecContext|PrepareContext|QueryxContext|QueryRowxContext|GetContext|SelectContext)$
+          - pattern-not: '($C : *gin.Context).$M(...)'
+          - pattern-not: '($C : echo.Context).$M(...)'
+          - pattern-not: http.$M(...)
+          - pattern-not: '($CL : *http.Client).$M(...)'
+          - focus-metavariable: $Q
+
+  - id: hullproof-taint-go-xss
+    languages: [go]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data is written into an HTML response without encoding (CWE-79). Render it with html/template, which
+      escapes by context, or encode it with html.EscapeString before writing it; never wrap request data in
+      template.HTML.
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      sec_ids: [SEC-WEB-031]
+    pattern-sources:
+      - patterns:
+          - pattern: '($R : *http.Request).$M(...)'
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(FormValue|PostFormValue|Cookie|Cookies|FormFile|MultipartReader|Referer|UserAgent)$
+      - patterns:
+          - pattern: '($R : *http.Request).$F'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(URL|Form|PostForm|MultipartForm|Header|Body|RequestURI|Host)$
+      - pattern: mux.Vars(...)
+      - pattern: chi.URLParam(...)
+      - patterns:
+          - pattern-either:
+              - pattern: '($C : *gin.Context).$G(...)'
+              - pattern: '($C : echo.Context).$G(...)'
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|Params|PostForm|DefaultPostForm|PostFormArray|GetPostForm|GetHeader|Cookie|FormValue|QueryParam|QueryParams|FormParams|GetRawData|FormFile|ShouldBind|ShouldBindJSON|ShouldBindQuery|Bind|BindJSON)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseUint(...)
+          - pattern: strconv.ParseFloat(...)
+          - pattern: strconv.ParseBool(...)
+          - pattern: uuid.Parse(...)
+
+      - pattern-either:
+          - pattern: html.EscapeString(...)
+          - pattern: template.HTMLEscapeString(...)
+          - pattern: template.JSEscapeString(...)
+          - pattern: url.QueryEscape(...)
+          - pattern: url.PathEscape(...)
+          - pattern: json.Marshal(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: '($W : http.ResponseWriter).Write($X)'
+              - pattern: 'fmt.Fprintf(($W : http.ResponseWriter), ..., $X, ...)'
+              - pattern: 'fmt.Fprint(($W : http.ResponseWriter), ..., $X, ...)'
+              - pattern: 'fmt.Fprintln(($W : http.ResponseWriter), ..., $X, ...)'
+              - pattern: 'io.WriteString(($W : http.ResponseWriter), $X)'
+              - pattern: template.HTML($X)
+              - pattern: template.JS($X)
+              - pattern: template.HTMLAttr($X)
+              - pattern: '($C : *gin.Context).Writer.WriteString($X)'
+              - pattern: '($C : echo.Context).HTML($CODE, $X)'
+              - patterns:
+                  - pattern: '($C : *gin.Context).Data($CODE, $CT, $X)'
+                  - metavariable-regex:
+                      metavariable: $CT
+                      regex: (?i).*html.*
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-go-command-injection
+    languages: [go]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches an operating system command or chooses the program that runs (CWE-78). Run a fixed program
+      with exec.Command and separate arguments, never through sh -c, and map the request value to a fixed set of
+      options.
+    metadata:
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      sec_ids: [SEC-API-020]
+    pattern-sources:
+      - patterns:
+          - pattern: '($R : *http.Request).$M(...)'
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(FormValue|PostFormValue|Cookie|Cookies|FormFile|MultipartReader|Referer|UserAgent)$
+      - patterns:
+          - pattern: '($R : *http.Request).$F'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(URL|Form|PostForm|MultipartForm|Header|Body|RequestURI|Host)$
+      - pattern: mux.Vars(...)
+      - pattern: chi.URLParam(...)
+      - patterns:
+          - pattern-either:
+              - pattern: '($C : *gin.Context).$G(...)'
+              - pattern: '($C : echo.Context).$G(...)'
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|Params|PostForm|DefaultPostForm|PostFormArray|GetPostForm|GetHeader|Cookie|FormValue|QueryParam|QueryParams|FormParams|GetRawData|FormFile|ShouldBind|ShouldBindJSON|ShouldBindQuery|Bind|BindJSON)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseUint(...)
+          - pattern: strconv.ParseFloat(...)
+          - pattern: strconv.ParseBool(...)
+          - pattern: uuid.Parse(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec.Command($X, ...)
+              - pattern: exec.CommandContext($CTX, $X, ...)
+              - pattern: exec.Command($SH, "-c", $X, ...)
+              - pattern: exec.CommandContext($CTX, $SH, "-c", $X, ...)
+              - pattern: syscall.Exec($X, ...)
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-go-path-traversal
+    languages: [go]
+    mode: taint
+    severity: WARNING
+    message: >-
+      Request data becomes part of a file path the server opens, writes, lists, deletes or serves (CWE-22).
+      filepath.Clean alone does not stop a relative path from leaving the folder. Reduce the name with filepath.Base,
+      or join it to a fixed root and check the result still has that root as its prefix before using it.
+    metadata:
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      sec_ids: []
+    pattern-sources:
+      - patterns:
+          - pattern: '($R : *http.Request).$M(...)'
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(FormValue|PostFormValue|Cookie|Cookies|FormFile|MultipartReader|Referer|UserAgent)$
+      - patterns:
+          - pattern: '($R : *http.Request).$F'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(URL|Form|PostForm|MultipartForm|Header|Body|RequestURI|Host)$
+      - pattern: mux.Vars(...)
+      - pattern: chi.URLParam(...)
+      - patterns:
+          - pattern-either:
+              - pattern: '($C : *gin.Context).$G(...)'
+              - pattern: '($C : echo.Context).$G(...)'
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|Params|PostForm|DefaultPostForm|PostFormArray|GetPostForm|GetHeader|Cookie|FormValue|QueryParam|QueryParams|FormParams|GetRawData|FormFile|ShouldBind|ShouldBindJSON|ShouldBindQuery|Bind|BindJSON)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseUint(...)
+          - pattern: strconv.ParseFloat(...)
+          - pattern: strconv.ParseBool(...)
+          - pattern: uuid.Parse(...)
+
+      - pattern-either:
+          - pattern: filepath.Base(...)
+          - pattern: path.Base(...)
+
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify|within|inside|contain)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern: os.$F($X, ...)
+                  - metavariable-regex:
+                      metavariable: $F
+                      regex: ^(Open|OpenFile|Create|ReadFile|WriteFile|Remove|RemoveAll|Mkdir|MkdirAll|ReadDir|Stat|Lstat|Rename|Chmod|Truncate)$
+              - pattern: os.Rename($S, $X)
+              - pattern: ioutil.ReadFile($X)
+              - pattern: ioutil.WriteFile($X, ...)
+              - pattern: ioutil.ReadDir($X)
+              - pattern: http.ServeFile($W, $R, $X)
+              - pattern: '($C : *gin.Context).File($X)'
+              - pattern: '($C : *gin.Context).FileAttachment($X, ...)'
+              - pattern: '($C : echo.Context).File($X)'
+              - pattern: '($C : echo.Context).Attachment($X, ...)'
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-go-ssrf
+    languages: [go]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data chooses the address of an outbound request the server makes (CWE-918). Allow only http and https,
+      resolve the host, refuse private, loopback, link local and metadata addresses, dial the checked address and
+      check every redirect. A value that only fills a path or query under a fixed host is not matched.
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      sec_ids: [SEC-API-035]
+    pattern-sources:
+      - patterns:
+          - pattern: '($R : *http.Request).$M(...)'
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(FormValue|PostFormValue|Cookie|Cookies|FormFile|MultipartReader|Referer|UserAgent)$
+      - patterns:
+          - pattern: '($R : *http.Request).$F'
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(URL|Form|PostForm|MultipartForm|Header|Body|RequestURI|Host)$
+      - pattern: mux.Vars(...)
+      - pattern: chi.URLParam(...)
+      - patterns:
+          - pattern-either:
+              - pattern: '($C : *gin.Context).$G(...)'
+              - pattern: '($C : echo.Context).$G(...)'
+          - metavariable-regex:
+              metavariable: $G
+              regex: ^(Query|DefaultQuery|QueryArray|QueryMap|GetQuery|Param|Params|PostForm|DefaultPostForm|PostFormArray|GetPostForm|GetHeader|Cookie|FormValue|QueryParam|QueryParams|FormParams|GetRawData|FormFile|ShouldBind|ShouldBindJSON|ShouldBindQuery|Bind|BindJSON)$
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseUint(...)
+          - pattern: strconv.ParseFloat(...)
+          - pattern: strconv.ParseBool(...)
+          - pattern: uuid.Parse(...)
+
+      - pattern-either:
+          - pattern: url.QueryEscape(...)
+          - pattern: url.PathEscape(...)
+      - patterns:
+          - pattern: '"$URL" + $Y'
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^https?://[^/]+/
+      - patterns:
+          - pattern: fmt.Sprintf("$URL", ...)
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^https?://[^/%]+/
+
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Get($X)
+              - pattern: http.Head($X)
+              - pattern: http.Post($X, ...)
+              - pattern: http.PostForm($X, ...)
+              - pattern: http.NewRequest($M, $X, ...)
+              - pattern: http.NewRequestWithContext($CTX, $M, $X, ...)
+              - pattern: '($CL : *http.Client).Get($X)'
+              - pattern: '($CL : *http.Client).Head($X)'
+              - pattern: '($CL : *http.Client).Post($X, ...)'
+              - pattern: net.Dial($N, $X)
+              - pattern: net.DialTimeout($N, $X, ...)
+          - focus-metavariable: $X

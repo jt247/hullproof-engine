@@ -1,0 +1,25 @@
+{
+  "category": "ai",
+  "entries": [
+    {"id": "anthropic-sdk", "deps": {"npm": ["@anthropic-ai/sdk"], "pypi": ["anthropic"]}, "imports": {"js": ["@anthropic-ai/sdk"], "python": ["anthropic"]}},
+    {"id": "aws-bedrock", "deps": {"npm": ["@aws-sdk/client-bedrock-runtime", "@ai-sdk/amazon-bedrock"]}, "signals": [{"files": ["*.py"], "regex": "boto3\\.client\\(\\s*['\"]bedrock-runtime['\"]"}]},
+    {"id": "azure-openai", "deps": {"npm": ["@azure/openai"], "nuget": ["Azure.AI.OpenAI"]}},
+    {"id": "chromadb", "deps": {"npm": ["chromadb"], "pypi": ["chromadb"]}},
+    {"id": "cohere-sdk", "deps": {"npm": ["cohere-ai"], "pypi": ["cohere"]}},
+    {"id": "google-gemini-sdk", "deps": {"npm": ["@google/generative-ai", "@google/genai"], "pypi": ["google-generativeai", "google-genai"]}, "imports": {"python": ["google.generativeai", "google.genai"]}},
+    {"id": "groq-sdk", "deps": {"npm": ["groq-sdk"], "pypi": ["groq"]}},
+    {"id": "huggingface", "deps": {"npm": ["@huggingface/inference", "@huggingface/transformers"], "pypi": ["transformers", "huggingface-hub"]}},
+    {"id": "langchain", "deps": {"npm": ["langchain", "@langchain/*"], "pypi": ["langchain", "langchain-*", "langgraph"]}},
+    {"id": "llamaindex", "deps": {"npm": ["llamaindex"], "pypi": ["llama-index", "llama-index-*"]}},
+    {"id": "mcp-server", "deps": {"npm": ["@modelcontextprotocol/sdk"], "pypi": ["mcp", "fastmcp"]}, "imports": {"js": ["@modelcontextprotocol/sdk/server"], "python": ["mcp.server"]}},
+    {"id": "mistral-sdk", "deps": {"npm": ["@mistralai/mistralai"], "pypi": ["mistralai"]}},
+    {"id": "ollama", "deps": {"npm": ["ollama"], "pypi": ["ollama"]}},
+    {"id": "openai-sdk", "deps": {"npm": ["openai"], "pypi": ["openai"], "go": ["github.com/openai/openai-go*", "github.com/sashabaranov/go-openai"]}, "imports": {"js": ["openai"], "python": ["openai"]}},
+    {"id": "pgvector", "deps": {"npm": ["pgvector"], "pypi": ["pgvector"]}, "signals": [{"files": ["*.sql"], "regex": "create\\s+extension\\s+(if\\s+not\\s+exists\\s+)?\"?vector\"?", "ignore_case": true, "confidence": "high"}]},
+    {"id": "pinecone", "deps": {"npm": ["@pinecone-database/pinecone"], "pypi": ["pinecone", "pinecone-client"]}},
+    {"id": "qdrant", "deps": {"npm": ["@qdrant/js-client-rest"], "pypi": ["qdrant-client"]}},
+    {"id": "replicate", "deps": {"npm": ["replicate"], "pypi": ["replicate"]}},
+    {"id": "vercel-ai-sdk", "deps": {"npm": ["ai", "@ai-sdk/*"]}},
+    {"id": "weaviate", "deps": {"npm": ["weaviate-client", "weaviate-ts-client"], "pypi": ["weaviate-client"]}}
+  ]
+}

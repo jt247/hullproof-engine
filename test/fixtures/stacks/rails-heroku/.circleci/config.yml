@@ -1,0 +1,5 @@
+version: 2.1
+jobs:
+  test:
+    docker:
+      - image: cimg/ruby:3.3

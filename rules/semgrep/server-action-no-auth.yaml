@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/server-action-no-auth.yaml).
+#
+rules:
+  - id: hullproof-server-action-no-auth
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Exported function in a file with a top level "use server" directive has no call to a
+      session, auth or permission helper anywhere in its body. Every export is a public endpoint. Call the shared auth helper first.
+    patterns:
+      - pattern-inside: |
+          "use server";
+          ...
+      - pattern-either:
+          - pattern: export async function $F(...) { ... }
+          - pattern: export const $F = async (...) => { ... }
+      - pattern-not-regex: (?i)\b(?:[\w$]*(?:getUser|getSession|getClaims|requireUser|currentUser|session|assertAdmin|requireAdmin|authorize|authenticate|requireRole|checkPermission|validateRequest|requireAuth|withAuth|checkAuth|assertAuth|verifyAuth)[\w$]*|auth)\s*\(
+    metadata:
+      sec_ids: [SEC-AUTHZ-002, SEC-API-001]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: >-
+        The whole function text is searched, so a session read inside an if, try or nested block counts. A helper name in a comment also
+        counts. The helper name regex is a convention guess. Adjust it to the project's auth helper.

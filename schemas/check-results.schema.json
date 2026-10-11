@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/check-results.schema.json",
+  "title": "Hullproof Engine executable check results (checks.json)",
+  "description": "Results sorted by check_id, evidence by file then line, not_run by check_id. No timestamp.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "commit", "results", "not_run"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["check_id", "sec_ids", "result", "evidence", "absence_search", "message_key"],
+        "properties": {
+          "check_id": {"type": "string", "pattern": "^check\\.[a-z0-9-]+\\.[a-z0-9-]+$"},
+          "sec_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$"}},
+          "result": {"type": "string", "pattern": "^(FAIL|PASS \\(static\\)|NOT APPLICABLE|NOT ASSESSED: (NEEDS DASHBOARD|NEEDS BUILD|NEEDS DYNAMIC TEST|ASK OWNER|ATTESTATION|UNKNOWN))$"},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object", "additionalProperties": false, "required": ["file", "note"],
+              "properties": {
+                "file": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^/\\\\]"},
+                "line": {"type": "integer", "minimum": 1},
+                "key": {"type": "string", "minLength": 1},
+                "note": {"type": "string", "minLength": 1, "maxLength": 300}
+              }
+            }
+          },
+          "absence_search": {
+            "type": ["object", "null"], "additionalProperties": false,
+            "required": ["pattern", "files_searched", "file_globs", "matches"],
+            "properties": {
+              "pattern": {"type": "string", "minLength": 1},
+              "files_searched": {"type": "integer", "minimum": 0},
+              "file_globs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+              "matches": {"type": "integer", "minimum": 0}
+            }
+          },
+          "message_key": {"type": "string", "minLength": 1, "maxLength": 240}
+        }
+      }
+    },
+    "not_run": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["check_id", "reason"],
+        "properties": {"check_id": {"type": "string", "minLength": 1}, "reason": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

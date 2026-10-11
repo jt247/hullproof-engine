@@ -1,0 +1,39 @@
+{
+  "category": "package_managers",
+  "entries": [
+    {"id": "bun", "signals": [
+      {"files": ["bun.lockb", "bun.lock"], "attrs": {"lockfiles": "$file"}},
+      {"files": ["package.json"], "regex": "\"packageManager\"\\s*:\\s*\"bun@", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "bundler", "signals": [{"files": ["Gemfile"], "attrs": {"manifests": "$file"}}, {"files": ["Gemfile.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "cargo", "signals": [{"files": ["Cargo.toml"], "attrs": {"manifests": "$file"}}, {"files": ["Cargo.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "carthage", "signals": [{"files": ["Cartfile"], "attrs": {"manifests": "$file"}}, {"files": ["Cartfile.resolved"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "cocoapods", "signals": [{"files": ["Podfile"], "attrs": {"manifests": "$file"}}, {"files": ["Podfile.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "composer", "signals": [{"files": ["composer.json"], "attrs": {"manifests": "$file"}}, {"files": ["composer.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "conda", "signals": [{"files": ["environment.yml", "environment.yaml"], "regex": "^dependencies:", "attrs": {"manifests": "$file"}}]},
+    {"id": "deno", "signals": [{"files": ["deno.json", "deno.jsonc"], "attrs": {"manifests": "$file"}}, {"files": ["deno.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "go-modules", "signals": [{"files": ["go.mod"], "attrs": {"manifests": "$file"}}, {"files": ["go.sum"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "gradle", "signals": [{"files": ["build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"], "attrs": {"manifests": "$file"}}, {"files": ["gradle.lockfile"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "hex", "signals": [{"files": ["mix.exs"], "attrs": {"manifests": "$file"}}, {"files": ["mix.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "maven", "signals": [{"files": ["pom.xml"], "attrs": {"manifests": "$file"}}]},
+    {"id": "npm", "signals": [
+      {"files": ["package-lock.json", "npm-shrinkwrap.json"], "attrs": {"lockfiles": "$file"}},
+      {"files": ["package.json"], "regex": "\"packageManager\"\\s*:\\s*\"npm@", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "nuget", "signals": [{"files": ["*.csproj", "*.fsproj", "*.vbproj", "packages.config"], "attrs": {"manifests": "$file"}}, {"files": ["packages.lock.json"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "pdm", "signals": [{"files": ["pdm.lock"], "attrs": {"lockfiles": "$file"}}, {"files": ["pyproject.toml"], "regex": "^\\[tool\\.pdm\\b", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "pip", "signals": [{"files": ["requirements*.txt", "**/requirements/*.txt", "requirements*.in"], "attrs": {"manifests": "$file"}}]},
+    {"id": "pipenv", "signals": [{"files": ["Pipfile"], "attrs": {"manifests": "$file"}}, {"files": ["Pipfile.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "pnpm", "signals": [
+      {"files": ["pnpm-lock.yaml"], "attrs": {"lockfiles": "$file"}},
+      {"files": ["pnpm-workspace.yaml"], "attrs": {"manifests": "$file"}},
+      {"files": ["package.json"], "regex": "\"packageManager\"\\s*:\\s*\"pnpm@", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "poetry", "signals": [{"files": ["poetry.lock"], "attrs": {"lockfiles": "$file"}}, {"files": ["pyproject.toml"], "regex": "^\\[tool\\.poetry\\]", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "pub", "signals": [{"files": ["pubspec.yaml"], "attrs": {"manifests": "$file"}}, {"files": ["pubspec.lock"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "sbt", "signals": [{"files": ["build.sbt"], "attrs": {"manifests": "$file"}}]},
+    {"id": "swift-package-manager", "signals": [{"files": ["Package.swift"], "attrs": {"manifests": "$file"}}, {"files": ["Package.resolved"], "attrs": {"lockfiles": "$file"}}]},
+    {"id": "uv", "signals": [{"files": ["uv.lock"], "attrs": {"lockfiles": "$file"}}, {"files": ["pyproject.toml"], "regex": "^\\[tool\\.uv\\b", "confidence": "high", "attrs": {"manifests": "$file"}}]},
+    {"id": "yarn", "signals": [
+      {"files": ["yarn.lock"], "attrs": {"lockfiles": "$file"}},
+      {"files": [".yarnrc.yml", ".yarnrc"], "attrs": {"manifests": "$file"}},
+      {"files": ["package.json"], "regex": "\"packageManager\"\\s*:\\s*\"yarn@", "confidence": "high", "attrs": {"manifests": "$file"}}]}
+  ]
+}

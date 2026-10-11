@@ -1,0 +1,22 @@
+{
+  "id": "check.storage.firebase-rules-not-open",
+  "sec_ids": [
+    "SEC-DATA-019"
+  ],
+  "applies_when": {},
+  "op": "regex_absent",
+  "params": {
+    "files": [
+      "**/storage.rules"
+    ],
+    "pattern": "allow\\s+[\\w\\s,]+:\\s*if\\s+true\\s*;|allow\\s+[\\w\\s,]+\\s*;|request\\.time\\s*<\\s*timestamp\\.date",
+    "note": "storage rule open to every caller (Firebase)",
+    "not_applicable_reason": "no Firebase Storage rules file"
+  },
+  "on_true": "NOT ASSESSED: NEEDS DYNAMIC TEST",
+  "on_false": "FAIL",
+  "fixtures": {
+    "pass": "test/fixtures/checks/storage-rules-not-open/pass",
+    "fail": "test/fixtures/checks/storage-rules-not-open/fail"
+  }
+}

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/api-route-no-auth.yaml).
+#
+rules:
+  - id: hullproof-api-route-no-auth
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      An API route handler (GET, POST, PUT, PATCH or DELETE) reads from a database or data client and nothing in the handler
+      reads a session, user, token, signature or secret. If the route is not meant to be public, any caller gets the data. Read
+      the session first and return 401 before any query, or confirm that the route is public on purpose.
+    patterns:
+      - pattern-either:
+          - pattern: export async function $M(...) { ... $DB.$READ(...); ... }
+          - pattern: export const $M = async (...) => { ... $DB.$READ(...); ... }
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(GET|POST|PUT|PATCH|DELETE)$
+      - metavariable-regex:
+          metavariable: $READ
+          regex: ^(select|findMany|findUnique|findFirst|findUniqueOrThrow|findFirstOrThrow|query|rpc|execute|single|maybeSingle|aggregate|download|list)$
+      - pattern-not-regex: (?i)(auth|getUser|getSession|getClaims|session|requireUser|currentUser|verify|signature|constructEvent|jwt|bearer|api_?key|cookies\s*\(|token|clerk|guard|permission|secret)
+    metadata:
+      sec_ids: [SEC-API-001, SEC-AUTHZ-002]
+      severity_hint: HIGH
+      confidence: LOW
+      note: >-
+        The handler text is searched for any of the words above, so one mention anywhere, even in a comment, counts as an auth
+        read. A deliberately public route is reported. Route handlers that call a shared wrapper with a name outside the list are
+        reported, add the wrapper name to the regex.

@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/raw-sql-concat.yaml).
+#
+rules:
+  - id: hullproof-raw-sql-concat
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A query sink receives a string built from an interpolated or concatenated value. Use
+      parameters or a tagged template that binds values.
+    patterns:
+      - pattern-either:
+          - pattern: $X.$M(`...${$Y}...`, ...)
+          - pattern: $X.$M("..." + $Y, ...)
+          - pattern: $X.$M($Y + "...", ...)
+          - pattern: $X.$M("...".concat(...), ...)
+          - pattern: $X.$M([...].join(...), ...)
+          - pattern: $X.$M(`...${$Y}...`.concat(...), ...)
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(query|execute|raw|unsafe|\$queryRawUnsafe|\$executeRawUnsafe|queryRawUnsafe|executeRawUnsafe|whereRaw|andWhereRaw|orWhereRaw|havingRaw|orderByRaw|groupByRaw|joinRaw|selectRaw|fromRaw|rawQuery|literal)$
+    metadata:
+      sec_ids: [SEC-API-017]
+      severity_hint: CRITICAL
+      confidence: HIGH
+      note: >-
+        Unambiguous query method names. Tagged template calls bind values and are not matched. The
+        queryRaw and executeRaw plain string misuse is in sql-variants.yaml.
+  - id: hullproof-sql-string-built-in-variable
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      A template literal that looks like SQL contains an interpolated value. If it reaches a query
+      call, bind the value as a parameter instead.
+    paths:
+      include: ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs"]
+    pattern-regex: '(?is)(?<![\w$])`[^`]*\b(?:select\s[^`]*\sfrom|insert\s+into|update\s+\w+\s+set|delete\s+from)\b[^`]*\$\{'
+    metadata:
+      sec_ids: [SEC-API-017]
+      severity_hint: HIGH
+      confidence: LOW

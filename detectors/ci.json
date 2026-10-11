@@ -1,0 +1,19 @@
+{
+  "category": "ci",
+  "entries": [
+    {"id": "aws-codebuild", "signals": [{"files": ["buildspec.yml", "buildspec.yaml"]}]},
+    {"id": "azure-pipelines", "signals": [{"files": ["azure-pipelines.yml", "azure-pipelines.yaml", ".azure-pipelines/*.yml", ".azure-pipelines/*.yaml"]}]},
+    {"id": "bitbucket-pipelines", "signals": [{"files": ["bitbucket-pipelines.yml"]}]},
+    {"id": "bitrise", "signals": [{"files": ["bitrise.yml"]}]},
+    {"id": "buildkite", "signals": [{"files": [".buildkite/*.yml", ".buildkite/*.yaml"]}]},
+    {"id": "circleci", "signals": [{"files": [".circleci/config.yml", ".circleci/config.yaml"]}]},
+    {"id": "codemagic", "signals": [{"files": ["codemagic.yaml", "codemagic.yml"]}]},
+    {"id": "drone", "signals": [{"files": [".drone.yml"]}]},
+    {"id": "expo-eas", "signals": [{"files": ["eas.json"]}]},
+    {"id": "github-actions", "signals": [{"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"]}]},
+    {"id": "gitlab-ci", "signals": [{"files": [".gitlab-ci.yml", ".gitlab-ci.yaml"]}, {"files": ["*.gitlab-ci.yml", "*.gitlab-ci.yaml"], "regex": "^(stages|include|[A-Za-z0-9_-]+):\\s*$", "confidence": "medium"}]},
+    {"id": "google-cloud-build", "signals": [{"files": ["cloudbuild.yaml", "cloudbuild.yml", "cloudbuild.json"]}]},
+    {"id": "jenkins", "signals": [{"files": ["Jenkinsfile", "Jenkinsfile.*"]}]},
+    {"id": "travis-ci", "signals": [{"files": [".travis.yml"]}]}
+  ]
+}

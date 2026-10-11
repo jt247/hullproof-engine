@@ -1,0 +1,4 @@
+{
+  "name": "fixture",
+  "buildpacks": [{"url": "heroku/ruby"}]
+}

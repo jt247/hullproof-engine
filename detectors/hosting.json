@@ -1,0 +1,44 @@
+{
+  "category": "hosting",
+  "entries": [
+    {"id": "alibaba-cloud", "attrs": {"kind": "cloud"}, "deps": {"terraform": ["alicloud"]}},
+    {"id": "aws", "attrs": {"kind": "cloud"},
+     "deps": {"terraform": ["aws"], "npm": ["@aws-sdk/*", "aws-sdk", "aws-cdk-lib", "aws-amplify", "@aws-amplify/*"], "pypi": ["boto3", "botocore", "aws-cdk-lib"], "go": ["github.com/aws/aws-sdk-go*"], "maven": ["com.amazonaws*", "software.amazon.awssdk*"], "nuget": ["AWSSDK*"], "rubygems": ["aws-sdk*"], "composer": ["aws/aws-sdk-php"]},
+     "deps_confidence": {"terraform": "high", "*": "medium"},
+     "imports": {"js": ["@aws-sdk/*", "aws-sdk"], "python": ["boto3"]},
+     "signals": [
+       {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*aws\\b", "confidence": "high"},
+       {"files": ["*.yaml", "*.yml", "*.json", "*.template"], "regex": "AWSTemplateFormatVersion", "confidence": "high"},
+       {"files": ["samconfig.toml", "cdk.json", "amplify.yml", "buildspec.yml", "appspec.yml", "Dockerrun.aws.json", ".ebextensions/*"]},
+       {"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"], "regex": "uses:\\s*aws-actions/"}]},
+    {"id": "azure", "attrs": {"kind": "cloud"},
+     "deps": {"terraform": ["azurerm", "azuread", "azapi"], "npm": ["@azure/*"], "pypi": ["azure-*"], "nuget": ["Azure*", "Microsoft.Azure*"], "maven": ["com.azure*", "com.microsoft.azure*"]},
+     "deps_confidence": {"terraform": "high", "*": "medium"},
+     "signals": [
+       {"files": ["*.bicep", "azure.yaml", "staticwebapp.config.json"]},
+       {"files": ["*.json"], "regex": "schema\\.management\\.azure\\.com/schemas/[^\"]*deploymentTemplate", "confidence": "high"},
+       {"files": ["host.json"], "regex": "\"extensionBundle\"|\"version\"\\s*:\\s*\"2\\.0\""},
+       {"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"], "regex": "uses:\\s*azure/", "ignore_case": true},
+       {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*azure\\b", "confidence": "high"}]},
+    {"id": "cloudflare", "attrs": {"kind": "platform"}, "deps": {"terraform": ["cloudflare"], "npm": ["wrangler", "@cloudflare/*"]}, "signals": [{"files": ["wrangler.toml", "wrangler.json", "wrangler.jsonc"]}]},
+    {"id": "digitalocean", "attrs": {"kind": "cloud"}, "deps": {"terraform": ["digitalocean"]}, "signals": [{"files": [".do/app.yaml", ".do/deploy.template.yaml"]}, {"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"], "regex": "uses:\\s*digitalocean/"}]},
+    {"id": "firebase", "attrs": {"kind": "platform"}, "deps": {"npm": ["firebase", "firebase-admin", "firebase-functions", "@react-native-firebase/*"], "pypi": ["firebase-admin"], "pub": ["firebase_core"]}, "deps_confidence": "medium", "signals": [{"files": ["firebase.json", ".firebaserc"]}]},
+    {"id": "fly", "attrs": {"kind": "platform"}, "signals": [{"files": ["fly.toml"]}]},
+    {"id": "google-cloud", "attrs": {"kind": "cloud"},
+     "deps": {"terraform": ["google", "google-beta"], "npm": ["@google-cloud/*"], "pypi": ["google-cloud-*"], "go": ["cloud.google.com/go*"], "maven": ["com.google.cloud*"], "nuget": ["Google.Cloud*"]},
+     "deps_confidence": {"terraform": "high", "*": "medium"},
+     "signals": [
+       {"files": ["cloudbuild.yaml", "cloudbuild.yml", "cloudbuild.json"]},
+       {"files": ["app.yaml"], "regex": "^runtime:\\s*\\S+"},
+       {"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"], "regex": "uses:\\s*google-github-actions/"},
+       {"files": ["serverless.yml", "serverless.yaml"], "regex": "^provider:\\s*\\n(?:\\s+.*\\n)*?\\s+name:\\s*google\\b", "confidence": "high"}]},
+    {"id": "heroku", "attrs": {"kind": "platform"}, "deps": {"terraform": ["heroku"]}, "signals": [{"files": ["heroku.yml"]}, {"files": ["Procfile"], "confidence": "medium"}, {"files": ["app.json"], "regex": "\"(buildpacks|formation|stack)\"\\s*:"}]},
+    {"id": "ibm-cloud", "attrs": {"kind": "cloud"}, "deps": {"terraform": ["ibm"]}},
+    {"id": "netlify", "attrs": {"kind": "platform"}, "deps": {"terraform": ["netlify"], "npm": ["@netlify/*", "netlify-cli"]}, "signals": [{"files": ["netlify.toml"]}]},
+    {"id": "oracle-cloud", "attrs": {"kind": "cloud"}, "deps": {"terraform": ["oci"]}},
+    {"id": "railway", "attrs": {"kind": "platform"}, "signals": [{"files": ["railway.json", "railway.toml"]}]},
+    {"id": "render", "attrs": {"kind": "platform"}, "signals": [{"files": ["render.yaml"]}]},
+    {"id": "supabase", "attrs": {"kind": "platform"}, "deps": {"npm": ["@supabase/supabase-js", "@supabase/ssr"], "pypi": ["supabase"], "pub": ["supabase_flutter"]}, "deps_confidence": "medium", "signals": [{"files": ["**/supabase/config.toml"]}, {"files": ["**/supabase/functions/**"], "confidence": "high"}]},
+    {"id": "vercel", "attrs": {"kind": "platform"}, "deps": {"terraform": ["vercel"], "npm": ["@vercel/analytics", "@vercel/functions", "@vercel/node", "@vercel/postgres", "@vercel/kv", "@vercel/blob", "vercel"]}, "deps_confidence": {"terraform": "high", "*": "medium"}, "signals": [{"files": ["vercel.json"]}, {"files": [".github/workflows/*.yml", ".github/workflows/*.yaml"], "regex": "\\bvercel\\s+(deploy|--prod|build)|amondnet/vercel-action"}]}
+  ]
+}

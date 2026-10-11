@@ -1,0 +1,391 @@
+{
+  "min_judged": 3,
+  "rules": {
+    "hullproof-api-route-no-auth": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-cors-origin-true": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-cors-reflect-origin": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-dynamic-module-path": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-eval-or-new-function": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 1,
+      "precision": 0,
+      "tier": "gate"
+    },
+    "hullproof-eval-through-alias": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-expression-library-eval": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-log-session-token": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 2,
+      "precision": 0,
+      "tier": "gate"
+    },
+    "hullproof-math-random-token": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-next-public-secret-name": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-postgrest-filter-string": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-postgrest-interpolated-filter": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-raw-sql-concat": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 2,
+      "precision": 1,
+      "tier": "gate"
+    },
+    "hullproof-read-by-id-no-owner": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-server-action-no-auth": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-sql-built-string-reaches-query": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 4,
+      "precision": 1,
+      "tier": "gate"
+    },
+    "hullproof-sql-raw-non-literal": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-sql-string-built-in-variable": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 4,
+      "precision": 1,
+      "tier": "gate"
+    },
+    "hullproof-sql-tagged-template-misuse": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-ssrf-request-data-to-url": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 1,
+      "precision": 1,
+      "tier": "gate"
+    },
+    "hullproof-ssrf-stored-url": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-ssrf-url-built-from-base": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-subprocess-arg-no-separator": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-subprocess-request-data": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-subprocess-shell-interpreter": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-subprocess-shell-string": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-taint-go-command-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-go-path-traversal": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-go-sql-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-go-ssrf": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-go-xss": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-java-command-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-java-path-traversal": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-java-sql-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-java-ssrf": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-java-xss": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-js-command-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-js-path-traversal": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 3,
+      "precision": 0,
+      "tier": "lead"
+    },
+    "hullproof-taint-js-sql-injection": {
+      "date": "2026-10-10",
+      "evidence": "Juice Shop 0e6d909, hand checked records in shipped code, pro run samples with seeds 20261010 and 20261011 (before and after)",
+      "judged": 2,
+      "precision": 1,
+      "tier": "lead"
+    },
+    "hullproof-taint-js-ssrf": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-js-xss": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-php-command-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-php-path-traversal": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-php-sql-injection": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-php-ssrf": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-php-xss": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-py-command-injection": {
+      "date": "2026-10-10",
+      "evidence": "BenchmarkPython f129148, cases flagged in the rule's own category",
+      "judged": 7,
+      "precision": 0.71,
+      "tier": "lead"
+    },
+    "hullproof-taint-py-path-traversal": {
+      "date": "2026-10-10",
+      "evidence": "BenchmarkPython f129148, cases flagged in the rule's own category",
+      "judged": 53,
+      "precision": 0.43,
+      "tier": "lead"
+    },
+    "hullproof-taint-py-sql-injection": {
+      "date": "2026-10-10",
+      "evidence": "BenchmarkPython f129148, cases flagged in the rule's own category",
+      "judged": 2,
+      "precision": 1,
+      "tier": "lead"
+    },
+    "hullproof-taint-py-ssrf": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "lead"
+    },
+    "hullproof-taint-py-xss": {
+      "date": "2026-10-10",
+      "evidence": "BenchmarkPython f129148, cases flagged in the rule's own category",
+      "judged": 37,
+      "precision": 0.38,
+      "tier": "lead"
+    },
+    "hullproof-tool-handler-admin-client-no-scope": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-user-metadata-authz": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-verify-result-unused": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    },
+    "hullproof-webhook-parse-before-verify": {
+      "date": null,
+      "evidence": "not measured yet",
+      "judged": 0,
+      "precision": null,
+      "tier": "gate"
+    }
+  },
+  "threshold": 0.8
+}

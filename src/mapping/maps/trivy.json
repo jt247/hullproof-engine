@@ -1,0 +1,13 @@
+{
+  "tool": "trivy",
+  "note": "One row per Trivy check id. Every id and title here was read from Trivy 0.75.0 JSON output (embedded checks, run with --skip-check-update) on terragoat or on test/fixtures/scanners/app; none is copied from documentation. The title is kept only so a reviewer can check the row; the engine never prints it. A Trivy hit whose id has no row is kept as an unmapped observation.",
+  "rows": [
+    {
+      "rule_id": "DS-0031",
+      "sec_ids": [
+        "SEC-CLOUD-016"
+      ],
+      "trivy_title": "Secrets passed via `build-args` or envs or copied secret files"
+    }
+  ]
+}

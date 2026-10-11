@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/log-session-token.yaml).
+#
+rules:
+  - id: hullproof-log-session-token
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A log call receives a value whose name says it is a session token, access token, authorization header, cookie, password or
+      secret. Logs are copied to vendors and read by more people than the database. Log a user id or a request id instead,
+      and never the credential.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $L.$M(<... $ARG ...>)
+                  - pattern: $L.$M(..., <... $ARG ...>, ...)
+              - metavariable-regex:
+                  metavariable: $ARG
+                  regex: (?i)^(?:[\w$]+\??\.)*[\w$]*(?:accesstoken|refreshtoken|idtoken|sessiontoken|session_token|access_token|refresh_token|id_token|authorization|bearer|jwt|cookie|password|passwd|secret|apikey|api_key)[\w$]*$
+          - patterns:
+              - pattern-either:
+                  - pattern: $L.$M($ARG)
+                  - pattern: $L.$M(..., $ARG, ...)
+              - metavariable-regex:
+                  metavariable: $ARG
+                  regex: (?i)^(?:[\w$]+\??\.)*(?:token|session|headers)$
+          - patterns:
+              - pattern-either:
+                  - pattern: $L.$M(<... $H.get($K) ...>)
+                  - pattern: $L.$M(..., <... $H.get($K) ...>, ...)
+              - metavariable-regex:
+                  metavariable: $K
+                  regex: (?i)^["'`](authorization|cookie|x-api-key)["'`]$
+      - metavariable-regex:
+          metavariable: $L
+          regex: ^(console|logger|log|Logger|winston|pino|bunyan|Sentry|this\.logger)$
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(log|info|warn|error|debug|trace|fatal|captureMessage|addBreadcrumb)$
+    metadata:
+      sec_ids: [SEC-LOG-001]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: >-
+        Matches names only. A string literal is not a match. Logging a whole session object or the whole headers object is
+        reported because both hold the token. A variable with a neutral name that holds a token is not found.

@@ -1,0 +1,5 @@
+services:
+  db:
+    image: mysql:8.4
+  cache:
+    image: redis:7

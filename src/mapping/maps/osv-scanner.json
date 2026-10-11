@@ -1,0 +1,7 @@
+{
+  "tool": "osv-scanner",
+  "note": "Decided 2026-10-10 (design question 9): a known vulnerable dependency fails SEC-SUPPLY-002. Whether a given advisory fails or is only reported is set by the dependency policy in src/mapping/dependency-policy.ts.",
+  "rows": [
+    {"rule_id": "*", "sec_ids": ["SEC-SUPPLY-002"]}
+  ]
+}

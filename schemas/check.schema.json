@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/check.schema.json",
+  "title": "Hullproof Engine executable check definition (checks/*.json)",
+  "description": "Data only, no code. One interpreter in the engine runs the op. Every check ships a pass fixture and a fail fixture.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "sec_ids", "applies_when", "op", "on_true", "on_false", "fixtures"],
+  "oneOf": [
+    {"description": "A declarative check: one of the ten ops, with its params.", "required": ["params"], "properties": {"op": {"enum": ["file_exists", "file_exists_for_each", "file_absent", "regex_present", "regex_absent", "json_value", "sql_every_table_has", "workflow_uses_pinned_sha", "workflow_permissions", "version_in_table"]}}},
+    {"description": "A code check: op code, module names the TypeScript file in src/checks/code/ that holds run(). No params.", "required": ["module"], "properties": {"op": {"const": "code"}}}
+  ],
+  "properties": {
+    "id": {"type": "string", "pattern": "^check\\.[a-z0-9-]+\\.[a-z0-9-]+$"},
+    "sec_ids": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$"}},
+    "applies_when": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Stack categories from stack.json. The check runs when every named category has an item whose id is listed, or any item when the value is \"*\". An empty object means always.",
+      "properties": {
+        "languages": {"$ref": "#/$defs/match"}, "runtimes": {"$ref": "#/$defs/match"}, "frameworks": {"$ref": "#/$defs/match"},
+        "package_managers": {"$ref": "#/$defs/match"}, "data_stores": {"$ref": "#/$defs/match"}, "auth": {"$ref": "#/$defs/match"},
+        "payments": {"$ref": "#/$defs/match"}, "ai": {"$ref": "#/$defs/match"}, "hosting": {"$ref": "#/$defs/match"},
+        "iac": {"$ref": "#/$defs/match"}, "containers": {"$ref": "#/$defs/match"}, "ci": {"$ref": "#/$defs/match"}, "mobile": {"$ref": "#/$defs/match"}
+      }
+    },
+    "op": {"enum": ["file_exists", "file_exists_for_each", "file_absent", "regex_present", "regex_absent", "json_value", "sql_every_table_has", "workflow_uses_pinned_sha", "workflow_permissions", "version_in_table", "code"]},
+    "params": {"type": "object"},
+    "module": {"type": "string", "pattern": "^src/checks/code/[a-z0-9-]+\\.ts$"},
+    "on_true": {"$ref": "#/$defs/result"},
+    "on_false": {"$ref": "#/$defs/result"},
+    "fixtures": {
+      "type": "object", "additionalProperties": false, "required": ["pass", "fail"],
+      "properties": {"pass": {"type": "string", "minLength": 1}, "fail": {"type": "string", "minLength": 1}}
+    }
+  },
+  "$defs": {
+    "match": {"oneOf": [{"const": "*"}, {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"}}]},
+    "result": {"type": "string", "pattern": "^(FAIL|PASS \\(static\\)|NOT APPLICABLE|NOT ASSESSED: (NEEDS DASHBOARD|NEEDS BUILD|NEEDS DYNAMIC TEST|ASK OWNER|ATTESTATION|UNKNOWN))$"}
+  }
+}

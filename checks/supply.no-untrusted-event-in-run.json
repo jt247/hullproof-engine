@@ -1,0 +1,23 @@
+{
+  "id": "check.supply.no-untrusted-event-in-run",
+  "sec_ids": [
+    "SEC-SUPPLY-032"
+  ],
+  "applies_when": {},
+  "op": "regex_absent",
+  "params": {
+    "files": [
+      ".github/workflows/*.yml",
+      ".github/workflows/*.yaml"
+    ],
+    "pattern": "^(?![ \\t]*-?[ \\t]*[A-Za-z_][\\w-]*:[ \\t]*[\"']?\\$\\{\\{)[^\\n]*\\$\\{\\{\\s*github\\.(?:event\\.(?:issue|pull_request|comment|review|review_comment|discussion|discussion_comment|head_commit|commits|pages|workflow_run|pull_request_target)\\b[\\w.\\[\\]*]*\\.(?:title|body|message|name|label|ref|email|login|page_name|default_branch|head_branch)\\b|head_ref\\b)[^}]*\\}\\}",
+    "note": "text an outside person controls is expanded straight into a workflow script",
+    "not_applicable_reason": "no GitHub Actions workflow"
+  },
+  "on_true": "PASS (static)",
+  "on_false": "FAIL",
+  "fixtures": {
+    "pass": "test/fixtures/checks/no-untrusted-event-in-run/pass",
+    "fail": "test/fixtures/checks/no-untrusted-event-in-run/fail"
+  }
+}

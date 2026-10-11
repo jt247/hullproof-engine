@@ -1,0 +1,22 @@
+{
+  "category": "mobile",
+  "entries": [
+    {"id": "android", "signals": [
+      {"files": ["AndroidManifest.xml"]},
+      {"files": ["build.gradle", "build.gradle.kts"], "regex": "com\\.android\\.(application|library)", "confidence": "high"}]},
+    {"id": "capacitor", "deps": {"npm": ["@capacitor/core"]}, "signals": [{"files": ["capacitor.config.json", "capacitor.config.ts", "capacitor.config.js"]}]},
+    {"id": "cordova", "deps": {"npm": ["cordova", "cordova-android", "cordova-ios"]}, "signals": [{"files": ["config.xml"], "regex": "xmlns(:cdv)?=\"http://cordova\\.apache\\.org", "confidence": "high"}]},
+    {"id": "dotnet-maui", "signals": [{"files": ["*.csproj"], "regex": "<UseMaui>\\s*true", "confidence": "high"}]},
+    {"id": "expo", "deps": {"npm": ["expo"]}, "signals": [
+      {"files": ["app.json"], "regex": "^\\s*\"expo\"\\s*:", "confidence": "high"},
+      {"files": ["app.config.js", "app.config.ts"]},
+      {"files": ["eas.json"]}]},
+    {"id": "flutter", "deps": {"pub": ["flutter"]}, "imports": {"dart": ["flutter"]}, "signals": [{"files": ["pubspec.yaml"], "regex": "^\\s+sdk:\\s*flutter\\s*$", "confidence": "high"}]},
+    {"id": "ionic", "deps": {"npm": ["@ionic/*"]}, "signals": [{"files": ["ionic.config.json"]}]},
+    {"id": "ios", "imports": {"swift": ["UIKit", "SwiftUI"]}, "signals": [
+      {"files": ["**/*.xcodeproj/project.pbxproj"]},
+      {"files": ["Podfile"], "regex": "^\\s*platform\\s+:ios", "confidence": "high"},
+      {"files": ["Info.plist"], "regex": "UIApplicationSceneManifest|LSRequiresIPhoneOS|UILaunchStoryboardName", "confidence": "high"}]},
+    {"id": "react-native", "deps": {"npm": ["react-native"]}, "imports": {"js": ["react-native"]}}
+  ]
+}

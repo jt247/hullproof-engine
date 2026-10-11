@@ -1,0 +1,412 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Written for the Hullproof Engine from the CWE definitions named in each rule. Not copied or derived from any Semgrep
+# registry rule. Fixtures: test/fixtures/rules/taint-javascript.js and taint-javascript.tsx, run by test/rules.test.ts.
+#
+# Sources are request data in Express, Koa, Next.js (route handlers, API routes, page props) and plain Node http
+# handlers: the request object's fields and body readers, read through a variable named req, request or ctx. Browser
+# rules also read the page address (location, document.URL, document.referrer). Taint flows through string building,
+# template literals, assignment and calls by default. A project guard is recognised when its name says what it checks.
+rules:
+  - id: hullproof-taint-js-sql-injection
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches the text of a SQL query (CWE-89). Use placeholders with the values passed apart
+      (db.query("... WHERE id = $1", [id])), a tagged template the driver parameterises (sql`...`), or the query
+      builder's own methods, and keep the query text constant.
+    metadata:
+      cwe: "CWE-89: Improper Neutralization of Special Elements used in an SQL Command"
+      sec_ids: [SEC-API-017]
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.query
+              - pattern: $R.body
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.originalUrl
+              - pattern: $R.path
+              - pattern: $R.nextUrl
+              - pattern: $R.get(...)
+              - pattern: $R.header(...)
+              - pattern: $R.param(...)
+              - pattern: $R.json()
+              - pattern: $R.formData()
+              - pattern: $R.text()
+              - pattern: $R.request.body
+              - pattern: $R.request.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx)$
+      - pattern: searchParams
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: parseInt(...)
+          - pattern: parseFloat(...)
+          - pattern: Number(...)
+          - pattern: sql`...`
+          - pattern: Prisma.sql`...`
+      - patterns:
+          - pattern: $ESC(...)
+          - metavariable-regex:
+              metavariable: $ESC
+              regex: (?i)^(.*\.)?(escape|escapeLiteral|escapeIdentifier|escapeId|format)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($Q, ...)
+              - pattern: $DB.execute($Q, ...)
+              - pattern: $DB.raw($Q, ...)
+              - pattern: $DB.unsafe($Q, ...)
+              - pattern: $DB.$queryRawUnsafe($Q, ...)
+              - pattern: $DB.$executeRawUnsafe($Q, ...)
+              - patterns:
+                  - pattern: $DB.$RAW($Q, ...)
+                  - metavariable-regex:
+                      metavariable: $RAW
+                      regex: ^(whereRaw|orWhereRaw|havingRaw|orderByRaw|groupByRaw|joinRaw|selectRaw|fromRaw)$
+          - focus-metavariable: $Q
+
+  - id: hullproof-taint-js-xss
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request or page address data is written into HTML without encoding (CWE-79). Send it through a template or
+      component that escapes by default, set text with textContent, or encode it with one named escape function (or
+      DOMPurify for HTML that must stay HTML) before it reaches the HTML sink.
+    metadata:
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation"
+      sec_ids: [SEC-WEB-031]
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.query
+              - pattern: $R.body
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.originalUrl
+              - pattern: $R.path
+              - pattern: $R.nextUrl
+              - pattern: $R.get(...)
+              - pattern: $R.header(...)
+              - pattern: $R.param(...)
+              - pattern: $R.json()
+              - pattern: $R.formData()
+              - pattern: $R.text()
+              - pattern: $R.request.body
+              - pattern: $R.request.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx)$
+      - pattern: searchParams
+      - pattern-either:
+          - pattern: location.search
+          - pattern: location.hash
+          - pattern: location.href
+          - pattern: window.location.search
+          - pattern: window.location.hash
+          - pattern: window.location.href
+          - pattern: document.location.search
+          - pattern: document.location.hash
+          - pattern: document.URL
+          - pattern: document.documentURI
+          - pattern: document.referrer
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: parseInt(...)
+          - pattern: parseFloat(...)
+          - pattern: Number(...)
+          - pattern: encodeURIComponent(...)
+      - patterns:
+          - pattern: $ESC(...)
+          - metavariable-regex:
+              metavariable: $ESC
+              regex: (?i)^(.*\.)?\w*(escape|sanitize|encode|purify)\w*$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($X)
+              - pattern: $RES.write($X, ...)
+              - pattern: $RES.end($X, ...)
+          - metavariable-regex:
+              metavariable: $RES
+              regex: ^(res|response|reply)$
+          - pattern-not: $RES.send({...})
+          - pattern-not: $RES.send([...])
+          - focus-metavariable: $X
+      - patterns:
+          - pattern-either:
+              - pattern: '$CTX.body = $X'
+          - metavariable-regex:
+              metavariable: $CTX
+              regex: ^(ctx|this)$
+          - focus-metavariable: $X
+      - patterns:
+          - pattern-either:
+              - pattern: '$EL.innerHTML = $X'
+              - pattern: '$EL.outerHTML = $X'
+              - pattern: $EL.insertAdjacentHTML($POS, $X)
+              - pattern: document.write($X)
+              - pattern: document.writeln($X)
+              - pattern: '<$TAG dangerouslySetInnerHTML={{__html: $X}} />'
+              - patterns:
+                  - pattern-either:
+                      - pattern: 'new Response($X, {..., headers: {..., "Content-Type": $CT, ...}, ...})'
+                      - pattern: 'new Response($X, {..., headers: {..., "content-type": $CT, ...}, ...})'
+                      - pattern: 'new NextResponse($X, {..., headers: {..., "Content-Type": $CT, ...}, ...})'
+                  - metavariable-regex:
+                      metavariable: $CT
+                      regex: (?i).*html.*
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-js-command-injection
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data reaches a shell command or chooses the program that runs (CWE-78). Use execFile or spawn with a fixed
+      program, an argument array and no shell, and map the request value to a fixed set of options.
+    metadata:
+      cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+      sec_ids: [SEC-API-020]
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.query
+              - pattern: $R.body
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.originalUrl
+              - pattern: $R.path
+              - pattern: $R.nextUrl
+              - pattern: $R.get(...)
+              - pattern: $R.header(...)
+              - pattern: $R.param(...)
+              - pattern: $R.json()
+              - pattern: $R.formData()
+              - pattern: $R.text()
+              - pattern: $R.request.body
+              - pattern: $R.request.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx)$
+      - pattern: searchParams
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+      - patterns:
+          - pattern: $Q(...)
+          - metavariable-regex:
+              metavariable: $Q
+              regex: (?i)^(.*\.)?(quote|shellQuote|shellEscape|escapeShellArg)$
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: child_process.exec($X, ...)
+              - pattern: child_process.execSync($X, ...)
+              - pattern: child_process.spawn($X, ...)
+              - pattern: child_process.spawnSync($X, ...)
+              - pattern: child_process.execFile($X, ...)
+              - pattern: child_process.execFileSync($X, ...)
+              - pattern: child_process.fork($X, ...)
+              - pattern: 'child_process.spawn($SH, ["-c", $X, ...], ...)'
+              - pattern: 'child_process.spawnSync($SH, ["-c", $X, ...], ...)'
+              - pattern: 'child_process.spawn($P, $X, {..., shell: true, ...})'
+              - pattern: 'child_process.spawnSync($P, $X, {..., shell: true, ...})'
+              - patterns:
+                  - pattern: $CP.$F($X, ...)
+                  - metavariable-regex:
+                      metavariable: $CP
+                      regex: ^(cp|childProcess|child_process|proc)$
+                  - metavariable-regex:
+                      metavariable: $F
+                      regex: ^(exec|execSync|spawn|spawnSync|execFile|execFileSync)$
+              - patterns:
+                  - pattern-either:
+                      - pattern-inside: |
+                          import { $I } from 'node:child_process';
+                          ...
+                      - pattern-inside: |
+                          import { $I, ... } from 'node:child_process';
+                          ...
+                      - pattern-inside: |
+                          import { ..., $I } from 'node:child_process';
+                          ...
+                  - pattern: $F($X, ...)
+                  - metavariable-regex:
+                      metavariable: $F
+                      regex: ^(exec|execSync|spawn|spawnSync|execFile|execFileSync)$
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-js-path-traversal
+    languages: [javascript, typescript]
+    mode: taint
+    severity: WARNING
+    message: >-
+      Request data becomes part of a file path the server reads, writes, lists, deletes or sends (CWE-22). Reduce the
+      name with path.basename, or resolve the full path and check that it starts with a fixed root folder, or pass
+      the root option to sendFile.
+    metadata:
+      cwe: "CWE-22: Improper Limitation of a Pathname to a Restricted Directory"
+      sec_ids: []
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.query
+              - pattern: $R.body
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.originalUrl
+              - pattern: $R.path
+              - pattern: $R.nextUrl
+              - pattern: $R.get(...)
+              - pattern: $R.header(...)
+              - pattern: $R.param(...)
+              - pattern: $R.json()
+              - pattern: $R.formData()
+              - pattern: $R.text()
+              - pattern: $R.request.body
+              - pattern: $R.request.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx)$
+      - pattern: searchParams
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: path.basename(...)
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify|within|inside|contain)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern-either:
+                      - pattern: fs.$F($X, ...)
+                      - pattern: fs.promises.$F($X, ...)
+                      - pattern: $FSP.$F($X, ...)
+                  - metavariable-regex:
+                      metavariable: $F
+                      regex: ^(readFile|readFileSync|writeFile|writeFileSync|appendFile|appendFileSync|createReadStream|createWriteStream|unlink|unlinkSync|rm|rmSync|rmdir|rmdirSync|readdir|readdirSync|open|openSync|mkdir|mkdirSync|rename|renameSync|copyFile|copyFileSync|stat|statSync)$
+              - patterns:
+                  - pattern-either:
+                      - pattern-inside: |
+                          import { $I } from '$MOD';
+                          ...
+                      - pattern-inside: |
+                          import { $I, ... } from '$MOD';
+                          ...
+                      - pattern-inside: |
+                          import { ..., $I } from '$MOD';
+                          ...
+                  - metavariable-regex:
+                      metavariable: $MOD
+                      regex: ^(node:)?fs(/promises)?$
+                  - pattern: $F($X, ...)
+                  - metavariable-regex:
+                      metavariable: $F
+                      regex: ^(readFile|readFileSync|writeFile|writeFileSync|appendFile|createReadStream|createWriteStream|unlink|unlinkSync|rm|rmSync|readdir|readdirSync|open|mkdir|rename|copyFile)$
+              - patterns:
+                  - pattern-either:
+                      - pattern: $RES.sendFile($X, ...)
+                      - pattern: $RES.download($X, ...)
+                  - pattern-not: '$RES.sendFile($X, {..., root: $ROOT, ...}, ...)'
+                  - metavariable-regex:
+                      metavariable: $RES
+                      regex: ^(res|response|reply)$
+          - focus-metavariable: $X
+
+  - id: hullproof-taint-js-ssrf
+    languages: [javascript, typescript]
+    mode: taint
+    severity: ERROR
+    message: >-
+      Request data chooses the address of an outbound request the server makes (CWE-918). Allow only http and https,
+      resolve the host, refuse private, loopback, link local and metadata addresses, connect to the checked address and
+      check every redirect. A value that only fills a path or query under a fixed host is not matched.
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      sec_ids: [SEC-API-035]
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.query
+              - pattern: $R.body
+              - pattern: $R.params
+              - pattern: $R.headers
+              - pattern: $R.cookies
+              - pattern: $R.url
+              - pattern: $R.originalUrl
+              - pattern: $R.path
+              - pattern: $R.nextUrl
+              - pattern: $R.get(...)
+              - pattern: $R.header(...)
+              - pattern: $R.param(...)
+              - pattern: $R.json()
+              - pattern: $R.formData()
+              - pattern: $R.text()
+              - pattern: $R.request.body
+              - pattern: $R.request.query
+          - metavariable-regex:
+              metavariable: $R
+              regex: ^(req|request|ctx)$
+      - pattern: searchParams
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: parseInt(...)
+          - pattern: Number(...)
+          - pattern: encodeURIComponent(...)
+      # A fixed scheme and host before the request value: the value can only change the path or the query.
+      - patterns:
+          - pattern: '"$URL" + $Y'
+          - metavariable-regex:
+              metavariable: $URL
+              regex: ^https?://[^/]+/
+      - pattern-regex: '`https?://[^/`$]+/[^`]*`'
+      - by-side-effect: true
+        patterns:
+          - pattern: $GUARD($X, ...)
+          - metavariable-regex:
+              metavariable: $GUARD
+              regex: (?i)^(.*\.)?\w*(safe|allow|valid|guard|check|verify)\w*$
+          - focus-metavariable: $X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fetch($X, ...)
+              - pattern: axios($X, ...)
+              - pattern: 'axios({..., url: $X, ...})'
+              - pattern: 'axios.request({..., url: $X, ...})'
+              - pattern: got($X, ...)
+              - pattern: undici.request($X, ...)
+              - pattern: http.get($X, ...)
+              - pattern: http.request($X, ...)
+              - pattern: https.get($X, ...)
+              - pattern: https.request($X, ...)
+              - patterns:
+                  - pattern-either:
+                      - pattern: axios.$M($X, ...)
+                      - pattern: got.$M($X, ...)
+                      - pattern: superagent.$M($X, ...)
+                  - metavariable-regex:
+                      metavariable: $M
+                      regex: ^(get|post|put|patch|delete|head|options)$
+          - focus-metavariable: $X

@@ -1,0 +1,12 @@
+{
+  "tool": "gitleaks",
+  "note": "Every Gitleaks rule maps the same way. A hit in a tracked file or in history fails SEC-SECRETS-004. A hit in a file that matches client_code_paths also fails SEC-SECRETS-001, whether tracked or not, because that is where a secret reaches the browser or the app package. A hit in an untracked file outside those paths is kept as an unmapped observation: it is on this machine, not in the repository.",
+  "rows": [
+    {"rule_id": "*", "sec_ids": ["SEC-SECRETS-004"]}
+  ],
+  "client_code_paths": [
+    ".next/static/**", "**/.next/static/**", "public/**", "**/public/**", "static/**", "dist/**", "**/dist/**",
+    "build/**", "**/build/**", "out/**", "**/*.map", "**/*.bundle", "**/*.jsbundle"
+  ],
+  "client_code_sec_ids": ["SEC-SECRETS-001"]
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/scan-meta.schema.json",
+  "title": "Hullproof Engine scanner reproducibility record (scan/<tool>.meta.json)",
+  "description": "What ran, with which version and config, on which commit. Written for every adapter, including skipped ones.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "status", "version", "tested_version_range", "version_tested", "argv", "config_sha256", "commit", "files_scanned", "files_tracked", "exit_code", "db_date", "not_assessed_sec_ids"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "tool": {"enum": ["semgrep", "osv-scanner", "gitleaks", "trivy", "checkov"]},
+    "status": {"enum": ["ran", "skipped: not installed", "skipped: not applicable", "skipped: network not allowed", "failed"]},
+    "version": {"type": ["string", "null"]},
+    "tested_version_range": {"type": "string", "minLength": 1},
+    "version_tested": {"type": "boolean"},
+    "argv": {"type": "array", "items": {"type": "string"}},
+    "config_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "files_scanned": {"type": ["integer", "null"], "minimum": 0},
+    "files_tracked": {"type": ["integer", "null"], "minimum": 0},
+    "exit_code": {"type": ["integer", "null"]},
+    "db_date": {"type": ["string", "null"], "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+    "not_assessed_sec_ids": {"type": "array", "items": {"type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$"}}
+  }
+}

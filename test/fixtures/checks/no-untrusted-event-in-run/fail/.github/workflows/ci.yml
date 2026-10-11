@@ -1,0 +1,8 @@
+on: pull_request_target
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "PR ${{ github.event.pull_request.title }}"
+      - run: |
+          git checkout ${{ github.head_ref }}

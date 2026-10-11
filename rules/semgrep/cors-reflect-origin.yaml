@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/cors-reflect-origin.yaml).
+#
+rules:
+  - id: hullproof-cors-reflect-origin
+    mode: taint
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The request Origin header is copied into Access-Control-Allow-Origin. Compare it to an exact
+      allowlist and return the matched value, never the raw header.
+    pattern-sources:
+      - pattern: $REQ.headers.origin
+      - pattern: $REQ.headers["origin"]
+      - pattern: $REQ.headers.get("origin")
+      - pattern: $REQ.header("origin")
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.setHeader("Access-Control-Allow-Origin", $SINK)
+              - pattern: $RES.set("Access-Control-Allow-Origin", $SINK)
+              - pattern: $RES.header("Access-Control-Allow-Origin", $SINK)
+              - pattern: $RES.append("Access-Control-Allow-Origin", $SINK)
+              - pattern: $H.set("Access-Control-Allow-Origin", $SINK)
+              - pattern: '{..., "Access-Control-Allow-Origin": $SINK, ...}'
+          - focus-metavariable: $SINK
+          - pattern-not-inside: |
+              if (<... $L.includes(...) ...>) { ... }
+          - pattern-not-inside: |
+              if (<... $L.has(...) ...>) { ... }
+    metadata:
+      sec_ids: [SEC-WEB-022]
+      severity_hint: HIGH
+      confidence: MEDIUM
+  - id: hullproof-cors-origin-true
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      CORS is configured to accept any origin. Use an exact allowlist.
+    pattern-either:
+      - pattern: 'cors({..., origin: true, ...})'
+      - pattern: 'cors({..., origin: "*", credentials: true, ...})'
+      - pattern: 'cors({..., origin: (...) => true, ...})'
+    metadata:
+      sec_ids: [SEC-WEB-022]
+      severity_hint: HIGH
+      confidence: HIGH

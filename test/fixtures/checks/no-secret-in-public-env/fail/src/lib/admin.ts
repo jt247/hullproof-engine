@@ -1,0 +1,1 @@
+const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;

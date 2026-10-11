@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/read-by-id-no-owner.yaml).
+#
+rules:
+  - id: hullproof-read-by-id-no-owner
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A record is read by its id alone. The query holds no filter on the owner, user, organisation or tenant, so any caller who
+      knows or guesses another id gets that record. Add the owner filter to the same query (or rely on a row level security policy
+      that you have tested) and return 404 for a record that is not the caller's.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: $C.from(...).select(...).eq("id", $X)
+                  - pattern: $C.from(...).select().eq("id", $X)
+              - pattern-not-inside:
+                  patterns:
+                    - pattern: <... $Q.eq($K, ...) ...>
+                    - metavariable-regex:
+                        metavariable: $K
+                        regex: (?i)^["'`].*(user|owner|org|tenant|team|account|created_?by|author|member|workspace|profile|customer).*["'`]$
+          - patterns:
+              - pattern-either:
+                  - pattern: '$P.$T.$FIND({ where: { id: $X } })'
+                  - pattern: '$P.$T.$FIND({ where: { id: $X }, ... })'
+              - pattern-not:
+                  patterns:
+                    - pattern: '$P.$T.$FIND({ where: { ..., $K: $V, ... } })'
+                    - metavariable-regex:
+                        metavariable: $K
+                        regex: (?i)^["'`]?.*(user|owner|org|tenant|team|account|created_?by|author|member|workspace|profile|customer).*["'`]?$
+              - metavariable-regex:
+                  metavariable: $FIND
+                  regex: ^(findUnique|findUniqueOrThrow|findFirst|findFirstOrThrow)$
+          - pattern: $DB.select(...).from($T).where(eq($T2.id, $X))
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i)^(?!.*(user|session|auth|owner|me\b)).*$
+    metadata:
+      sec_ids: [SEC-AUTHZ-003]
+      severity_hint: HIGH
+      confidence: LOW
+      note: >-
+        Covers a Supabase client chain, a Prisma find call and a Drizzle select with one id condition. It cannot see a row level
+        security policy, a wrapper that adds the owner filter, or an owner check made on the next line. A value whose text names
+        user, session, auth or owner is treated as the caller's own id and skipped. Read the query and the policy before you rate it.

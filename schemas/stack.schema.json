@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/stack.schema.json",
+  "title": "Hullproof Engine stack.json",
+  "description": "Written by hullproof discover. Arrays of items are sorted by id; evidence by confidence, then file, then line; skipped by path; unknown by file then note. No timestamp, so the same files and detector files give the same bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "engine_version", "detectors_sha256", "commit", "confirmed_by_user", "files", "limits", "skipped",
+    "languages", "runtimes", "frameworks", "package_managers", "data_stores", "auth", "payments", "ai", "hosting", "iac", "containers", "ci", "mobile", "unknown"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "engine_version": {"type": "string", "minLength": 1},
+    "detectors_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
+    "confirmed_by_user": {"type": "boolean"},
+    "files": {
+      "type": "object", "additionalProperties": false, "required": ["listed", "scanned_for_imports"],
+      "properties": {"listed": {"type": "integer", "minimum": 0}, "scanned_for_imports": {"type": "integer", "minimum": 0}}
+    },
+    "limits": {
+      "type": "object", "additionalProperties": false, "required": ["max_files", "max_bytes_per_file", "file_cap_reached", "truncated_files"],
+      "properties": {
+        "max_files": {"type": "integer", "minimum": 1},
+        "max_bytes_per_file": {"type": "integer", "minimum": 1},
+        "file_cap_reached": {"type": "boolean"},
+        "truncated_files": {"type": "array", "items": {"$ref": "#/$defs/path"}}
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "reason"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "reason": {"enum": ["gitignore", "dependency folder", "build output", "tool folder", "symlink"]}
+        }
+      }
+    },
+    "languages": {"$ref": "#/$defs/items"},
+    "runtimes": {"$ref": "#/$defs/items"},
+    "frameworks": {"$ref": "#/$defs/items"},
+    "package_managers": {"$ref": "#/$defs/items"},
+    "data_stores": {"$ref": "#/$defs/items"},
+    "auth": {"$ref": "#/$defs/items"},
+    "payments": {"$ref": "#/$defs/items"},
+    "ai": {"$ref": "#/$defs/items"},
+    "hosting": {"$ref": "#/$defs/items"},
+    "iac": {"$ref": "#/$defs/items"},
+    "containers": {"$ref": "#/$defs/items"},
+    "ci": {"$ref": "#/$defs/items"},
+    "mobile": {"$ref": "#/$defs/items"},
+    "unknown": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["file", "note"],
+        "properties": {"file": {"$ref": "#/$defs/path"}, "note": {"type": "string", "minLength": 1}}
+      }
+    }
+  },
+  "$defs": {
+    "path": {"type": "string", "minLength": 1, "pattern": "^[^/\\\\]", "description": "repository relative POSIX path"},
+    "confidence": {"enum": ["high", "medium", "low"], "description": "high: a manifest dependency or a file whose only purpose is this thing. medium: a source import, an SDK dependency, or a content pattern. low: a weak hint."},
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["file", "rule", "confidence"],
+      "description": "Exactly one of line or key is present.",
+      "properties": {
+        "file": {"$ref": "#/$defs/path"},
+        "line": {"type": "integer", "minimum": 1},
+        "key": {"type": "string", "minLength": 1},
+        "rule": {"type": "string", "pattern": "^[a-z_]+\\.[a-z0-9.-]+\\.(dep|import|content|file|extension)(\\.[a-z0-9]+)?$"},
+        "confidence": {"$ref": "#/$defs/confidence"}
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "confidence", "evidence", "evidence_count"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+          "confidence": {"$ref": "#/$defs/confidence"},
+          "evidence": {"type": "array", "minItems": 1, "maxItems": 5, "items": {"$ref": "#/$defs/evidence"}},
+          "evidence_count": {"type": "integer", "minimum": 1},
+          "versions": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "package@declared version or range, as written in the manifest"},
+          "file_count": {"type": "integer", "minimum": 1},
+          "kind": {"enum": ["platform", "cloud"]},
+          "clouds": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "lockfiles": {"type": "array", "items": {"$ref": "#/$defs/path"}},
+          "manifests": {"type": "array", "items": {"$ref": "#/$defs/path"}}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/webhook-parse-before-verify.yaml).
+#
+rules:
+  - id: hullproof-webhook-parse-before-verify
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The request body is parsed as JSON before the webhook signature is verified. Read the raw
+      text first, verify the signature over those exact bytes, then parse.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $B = await $REQ.json();
+              ...
+              $OBJ.$M(...);
+          - pattern: |
+              $B = await $REQ.formData();
+              ...
+              $OBJ.$M(...);
+      - metavariable-regex:
+          metavariable: $M
+          regex: ^(constructEvent|constructEventAsync|verify|verifySignature|verifyWebhook|verifyWebhookSignature|validateEvent|unwrap|isValidSignature)$
+    metadata:
+      sec_ids: [SEC-API-101]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: Heuristic. Matches a JSON body read followed by a verify style call in the same block.

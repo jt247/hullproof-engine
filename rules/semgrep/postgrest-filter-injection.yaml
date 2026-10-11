@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/postgrest-filter-injection.yaml).
+#
+rules:
+  - id: hullproof-postgrest-filter-string
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A PostgREST filter string, column or embed list is built from a value that is not a constant.
+      Filter strings are parsed as a small language, so a comma, a dot or a parenthesis in the value
+      adds conditions (for example an extra or branch that matches every row). Use the builder
+      methods with one column and one value each (eq, ilike, in), and take column names and sort
+      keys from a fixed allowlist.
+    patterns:
+      - pattern-either:
+          - pattern: $Q.or($F, ...)
+          - pattern: $Q.and($F, ...)
+          - pattern: $Q.filter($F, $OP, $V)
+          - pattern: $Q.not($F, $OP, $V)
+          - pattern: $Q.order($F, ...)
+          - pattern: $Q.eq($F, $V)
+          - pattern: $Q.neq($F, $V)
+          - pattern: $Q.ilike($F, $V)
+          - pattern: $Q.like($F, $V)
+          - pattern: $Q.in($F, $V)
+          - pattern: $Q.contains($F, $V)
+          - pattern: $Q.textSearch($F, $V, ...)
+          - pattern: $Q.from(...).select($F, ...)
+      - metavariable-pattern:
+          metavariable: $F
+          patterns:
+            - pattern: $Z
+            - pattern-not: '"..."'
+            - pattern-not: "`...`"
+            - pattern-not: '[...]'
+            - pattern-not: '{...}'
+      - metavariable-regex:
+          metavariable: $F
+          regex: (?s)^(?![A-Z][A-Z0-9_]*$)(?!\s*[\[{])(?!(?:z|zod|v|yup|Joi|t|S|Type|type)\.)
+    metadata:
+      sec_ids: [SEC-API-018, SEC-API-017]
+      severity_hint: HIGH
+      confidence: MEDIUM
+      note: >-
+        Fires on any non constant column name, filter string or sort key passed to a query builder
+        method. Value arguments of eq, ilike and in are bound by the client and are not flagged
+        unless the first argument is also dynamic. A constant written in upper case is skipped, and so is an argument that starts with a schema library name (z, zod, yup, Joi), because zod and similar libraries have or and and methods too.
+        Mongoose and similar libraries also have or and and methods: array and object arguments are skipped.
+  - id: hullproof-postgrest-interpolated-filter
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      A value is interpolated into a PostgREST filter string. A comma, dot or parenthesis in the value
+      changes the filter. Build the condition with one builder call per column and bind each value.
+    patterns:
+      - pattern-either:
+          - pattern: $Q.or(`...${$V}...`, ...)
+          - pattern: $Q.and(`...${$V}...`, ...)
+          - pattern: $Q.or("..." + $V, ...)
+          - pattern: $Q.and("..." + $V, ...)
+          - pattern: $Q.or($V + "...", ...)
+          - pattern: $Q.not($C, $O, `...${$V}...`)
+          - pattern: $Q.filter($C, $O, `...${$V}...`)
+          - pattern: $Q.from(...).select(`...${$V}...`, ...)
+          - pattern: $Q.select(`...${$V}...`, ...)
+      - metavariable-regex:
+          metavariable: $Q
+          regex: (?s).*(from|supabase|client|admin|db|query|builder|rest|table)\b.*
+    metadata:
+      sec_ids: [SEC-API-018, SEC-API-017]
+      severity_hint: CRITICAL
+      confidence: HIGH
+      note: >-
+        Template or concatenated string in or, and, filter, not or a select list on a Supabase or
+        PostgREST builder. The receiver name must mention from, supabase, client, admin, db, query,
+        builder, rest or table, which keeps unrelated or methods out. Single column calls such as
+        ilike with an interpolated pattern are bound by the client and are not matched.

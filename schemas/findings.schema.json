@@ -1,0 +1,1028 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/findings.schema.json",
+  "title": "Hullproof findings record",
+  "description": "The JSON object inside the hullproof-findings block of a <report>.findings.md file. This schema states field names, types and limits only. It cannot state the rules that connect fields (class and kind requirements, fingerprint order and prefix, verifier and lowering rules, report consistency, machine_evidence only in schema_version 1.1.0). validate-findings.mjs checks those.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "enum": [
+        "1.0.0",
+        "1.1.0"
+      ]
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "tree_clean": {
+          "type": "boolean"
+        },
+        "stage": {
+          "enum": [
+            "LAUNCH",
+            "GROWTH",
+            "SCALE"
+          ]
+        },
+        "profile": {
+          "enum": [
+            "quick",
+            "standard",
+            "deep"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "full",
+            "partial"
+          ]
+        },
+        "scope_note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "run_status": {
+          "enum": [
+            "complete",
+            "incomplete"
+          ]
+        },
+        "incomplete_reason": {
+          "enum": [
+            "budget_exhausted",
+            "agent_failure",
+            "owner_stopped",
+            "deterministic_only"
+          ]
+        },
+        "agent_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "required": [
+        "commit",
+        "tree",
+        "tree_clean",
+        "stage",
+        "profile",
+        "scope",
+        "run_status",
+        "agent_calls",
+        "budget"
+      ]
+    },
+    "records": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^(SEC-[A-Z]+-[0-9]{3}|GAP|OBS):(-|[^\\s:]+):[a-z0-9]+(-[a-z0-9]+){0,15}$"
+              },
+              "kind": {
+                "const": "fail"
+              },
+              "sec_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^SEC-[A-Z]+-[0-9]{3}$"
+                },
+                "minItems": 0,
+                "maxItems": 12
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "class": {
+                "enum": [
+                  "finding",
+                  "missing_control",
+                  "hardening_note"
+                ]
+              },
+              "gap_in_standard": {
+                "type": "boolean"
+              },
+              "severity": {
+                "enum": [
+                  "BLOCKER",
+                  "CRITICAL",
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW"
+                ]
+              },
+              "confidence": {
+                "enum": [
+                  "VERIFIED",
+                  "SUSPECTED"
+                ]
+              },
+              "demonstrated": {
+                "type": "boolean"
+              },
+              "root_cause": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "raised_by": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9 .:_/-]{0,60}$",
+                  "maxLength": 61
+                },
+                "minItems": 1,
+                "maxItems": 6
+              },
+              "impact_statement": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 600
+              },
+              "remediation": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "strategy": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 800
+                  },
+                  "confirm": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "strategy",
+                  "confirm"
+                ]
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 8
+              },
+              "boundary": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "principal": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "input": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "intended_control": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "crossed": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "affected": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "result": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "principal",
+                  "input",
+                  "intended_control",
+                  "crossed",
+                  "affected",
+                  "result"
+                ]
+              },
+              "trace": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "entrypoint",
+                        "handoff",
+                        "sink"
+                      ]
+                    },
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 12
+              },
+              "absence_search": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "command": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "files_searched": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "practice": {
+                    "enum": [
+                      "absent",
+                      "present_unsafe"
+                    ]
+                  }
+                },
+                "required": [
+                  "command",
+                  "files_searched",
+                  "count",
+                  "practice"
+                ]
+              },
+              "preventing_layer": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 6
+              },
+              "paths_enumerated": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "method": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "count",
+                  "method"
+                ]
+              },
+              "expiry_condition": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "owner_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "hash": {
+                      "type": "string",
+                      "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+                    },
+                    "hash_kind": {
+                      "enum": [
+                        "git_blob",
+                        "sha256"
+                      ]
+                    },
+                    "date": {
+                      "type": "string",
+                      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                    },
+                    "commit": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{40}$"
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "hash",
+                    "hash_kind",
+                    "date",
+                    "commit",
+                    "note"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 6
+              },
+              "lowering": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "enum": [
+                      "BLOCKER",
+                      "CRITICAL",
+                      "HIGH",
+                      "MEDIUM",
+                      "LOW"
+                    ]
+                  },
+                  "to": {
+                    "enum": [
+                      "BLOCKER",
+                      "CRITICAL",
+                      "HIGH",
+                      "MEDIUM",
+                      "LOW"
+                    ]
+                  },
+                  "evidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "file": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300,
+                          "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                        },
+                        "line": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000000
+                        },
+                        "note": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        }
+                      },
+                      "required": [
+                        "file",
+                        "line",
+                        "note"
+                      ]
+                    },
+                    "minItems": 1,
+                    "maxItems": 4
+                  },
+                  "reviewer": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "type": {
+                        "enum": [
+                          "person",
+                          "agent_session",
+                          "PENDING"
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      },
+                      "date": {
+                        "type": "string",
+                        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "evidence",
+                  "reviewer"
+                ]
+              },
+              "verified_by": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "agent": {
+                    "const": "hullproof-finding-verifier"
+                  },
+                  "mode": {
+                    "const": "finding"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "UPHELD",
+                      "ADJUSTED",
+                      "INSUFFICIENT"
+                    ]
+                  },
+                  "own_severity": {
+                    "enum": [
+                      "BLOCKER",
+                      "CRITICAL",
+                      "HIGH",
+                      "MEDIUM",
+                      "LOW"
+                    ]
+                  },
+                  "own_class": {
+                    "enum": [
+                      "finding",
+                      "missing_control",
+                      "hardening_note"
+                    ]
+                  },
+                  "call": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "agent",
+                  "mode",
+                  "outcome",
+                  "own_severity",
+                  "own_class"
+                ]
+              },
+              "machine_evidence": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "tool": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9._-]{0,39}$",
+                    "maxLength": 40
+                  },
+                  "rule_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,199}$",
+                    "maxLength": 200
+                  },
+                  "tool_version": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]{0,59}$",
+                    "maxLength": 60
+                  },
+                  "config_sha256": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "pattern": "^[0-9a-f]{64}$",
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "tool",
+                  "rule_id",
+                  "tool_version",
+                  "config_sha256"
+                ]
+              }
+            },
+            "required": [
+              "fingerprint",
+              "kind",
+              "sec_ids",
+              "title",
+              "class",
+              "gap_in_standard",
+              "severity",
+              "confidence",
+              "demonstrated",
+              "root_cause",
+              "raised_by",
+              "impact_statement",
+              "remediation",
+              "evidence"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^(SEC-[A-Z]+-[0-9]{3}|GAP|OBS):(-|[^\\s:]+):[a-z0-9]+(-[a-z0-9]+){0,15}$"
+              },
+              "kind": {
+                "const": "routed"
+              },
+              "sec_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^SEC-[A-Z]+-[0-9]{3}$"
+                },
+                "minItems": 0,
+                "maxItems": 12
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "state": {
+                "enum": [
+                  "NEEDS DASHBOARD",
+                  "NEEDS BUILD",
+                  "NEEDS DYNAMIC TEST",
+                  "ASK OWNER",
+                  "ATTESTATION",
+                  "UNKNOWN"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "owner_action": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "check_card": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^CC-[A-Z]+-[0-9]+$",
+                "maxLength": 40
+              },
+              "raised_by": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9 .:_/-]{0,60}$",
+                  "maxLength": 61
+                },
+                "minItems": 1,
+                "maxItems": 6
+              },
+              "boundary": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "principal": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "input": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "intended_control": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "crossed": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "affected": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  },
+                  "result": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                },
+                "required": [
+                  "principal",
+                  "input",
+                  "intended_control",
+                  "crossed",
+                  "affected",
+                  "result"
+                ]
+              },
+              "trace": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "kind": {
+                      "enum": [
+                        "entrypoint",
+                        "handoff",
+                        "sink"
+                      ]
+                    },
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 12
+              },
+              "verified_by": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "agent": {
+                    "const": "hullproof-finding-verifier"
+                  },
+                  "mode": {
+                    "const": "handoff"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "UPHELD",
+                      "ADJUSTED",
+                      "INSUFFICIENT"
+                    ]
+                  },
+                  "call": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "agent",
+                  "mode",
+                  "outcome",
+                  "call"
+                ]
+              }
+            },
+            "required": [
+              "fingerprint",
+              "kind",
+              "sec_ids",
+              "title",
+              "state",
+              "reason",
+              "owner_action",
+              "check_card",
+              "raised_by",
+              "boundary"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^(SEC-[A-Z]+-[0-9]{3}|GAP|OBS):(-|[^\\s:]+):[a-z0-9]+(-[a-z0-9]+){0,15}$"
+              },
+              "kind": {
+                "const": "refuted"
+              },
+              "sec_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^SEC-[A-Z]+-[0-9]{3}$"
+                },
+                "minItems": 0,
+                "maxItems": 12
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "claim": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "preventing_layer": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 6
+              },
+              "raised_by": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9 .:_/-]{0,60}$",
+                  "maxLength": 61
+                },
+                "minItems": 1,
+                "maxItems": 6
+              },
+              "verified_by": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "agent": {
+                    "const": "hullproof-finding-verifier"
+                  },
+                  "mode": {
+                    "enum": [
+                      "finding",
+                      "handoff"
+                    ]
+                  },
+                  "outcome": {
+                    "const": "REFUTED"
+                  },
+                  "call": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "agent",
+                  "mode",
+                  "outcome",
+                  "call"
+                ]
+              }
+            },
+            "required": [
+              "fingerprint",
+              "kind",
+              "sec_ids",
+              "title",
+              "claim",
+              "reason",
+              "preventing_layer",
+              "raised_by",
+              "verified_by"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^(SEC-[A-Z]+-[0-9]{3}|GAP|OBS):(-|[^\\s:]+):[a-z0-9]+(-[a-z0-9]+){0,15}$"
+              },
+              "kind": {
+                "const": "observation"
+              },
+              "sec_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^SEC-[A-Z]+-[0-9]{3}$"
+                },
+                "minItems": 0,
+                "maxItems": 12
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "where": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "file": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300,
+                      "description": "repository relative path, no leading slash, no .. segment, no backslash, colon or ~"
+                    },
+                    "line": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10000000
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  },
+                  "required": [
+                    "file",
+                    "line",
+                    "note"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 4
+              },
+              "note": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400
+              },
+              "raised_by": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9 .:_/-]{0,60}$",
+                  "maxLength": 61
+                },
+                "minItems": 1,
+                "maxItems": 6
+              }
+            },
+            "required": [
+              "fingerprint",
+              "kind",
+              "sec_ids",
+              "title",
+              "where",
+              "note",
+              "raised_by"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "report",
+    "records"
+  ]
+}

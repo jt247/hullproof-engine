@@ -1,0 +1,4 @@
+{
+  "name": "fixture-platforms",
+  "dependencies": {"hono": "4.0.0"}
+}

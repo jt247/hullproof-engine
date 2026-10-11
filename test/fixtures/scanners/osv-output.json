@@ -1,0 +1,238 @@
+{
+  "results": [
+    {
+      "source": {
+        "path": "/REPO/package-lock.json",
+        "type": "lockfile"
+      },
+      "packages": [
+        {
+          "package": {
+            "name": "test-pkg-a",
+            "version": "1.0.0",
+            "ecosystem": "npm"
+          },
+          "vulnerabilities": [
+            {
+              "id": "TEST-2026-0001",
+              "published": "2026-10-08T00:00:00Z",
+              "modified": "2026-10-09T12:00:00Z",
+              "aliases": [],
+              "affected": [
+                {
+                  "package": {
+                    "name": "test-pkg-a",
+                    "ecosystem": "npm"
+                  },
+                  "ranges": [
+                    {
+                      "type": "SEMVER",
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "1.0.1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "groups": [
+            {
+              "ids": [
+                "TEST-2026-0001"
+              ],
+              "aliases": [
+                "TEST-2026-0001"
+              ],
+              "max_severity": "9.8"
+            }
+          ]
+        },
+        {
+          "package": {
+            "name": "test-pkg-b",
+            "version": "2.0.0",
+            "ecosystem": "npm"
+          },
+          "vulnerabilities": [
+            {
+              "id": "TEST-2026-0002",
+              "published": "2026-09-01T00:00:00Z",
+              "modified": "2026-09-02T00:00:00Z",
+              "aliases": [],
+              "affected": [
+                {
+                  "package": {
+                    "name": "test-pkg-b",
+                    "ecosystem": "npm"
+                  },
+                  "ranges": [
+                    {
+                      "type": "SEMVER",
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "2.0.5"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "database_specific": {
+                "severity": "MODERATE"
+              }
+            },
+            {
+              "id": "TEST-2026-0003",
+              "published": "2026-01-01T00:00:00Z",
+              "modified": "2026-02-01T00:00:00Z",
+              "aliases": [],
+              "affected": [
+                {
+                  "package": {
+                    "name": "test-pkg-b",
+                    "ecosystem": "npm"
+                  },
+                  "ranges": [
+                    {
+                      "type": "SEMVER",
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "2.1.0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "groups": [
+            {
+              "ids": [
+                "TEST-2026-0002"
+              ],
+              "aliases": [
+                "TEST-2026-0002",
+                "TEST-ALIAS-0002"
+              ],
+              "max_severity": ""
+            },
+            {
+              "ids": [
+                "TEST-2026-0003"
+              ],
+              "aliases": [
+                "TEST-2026-0003"
+              ],
+              "max_severity": "5.0"
+            }
+          ]
+        },
+        {
+          "package": {
+            "name": "test-pkg-c",
+            "version": "0.3.0",
+            "ecosystem": "npm"
+          },
+          "vulnerabilities": [
+            {
+              "id": "TEST-2026-0004",
+              "published": "2026-10-01T00:00:00Z",
+              "modified": "2026-10-01T00:00:00Z",
+              "aliases": [],
+              "affected": [
+                {
+                  "package": {
+                    "name": "test-pkg-c",
+                    "ecosystem": "npm"
+                  },
+                  "ranges": [
+                    {
+                      "type": "SEMVER",
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "0.3.1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "TEST-2026-0005",
+              "published": "2026-09-30T00:00:00Z",
+              "modified": "2026-09-30T00:00:00Z",
+              "aliases": [],
+              "affected": [
+                {
+                  "package": {
+                    "name": "test-pkg-c",
+                    "ecosystem": "npm"
+                  },
+                  "ranges": [
+                    {
+                      "type": "SEMVER",
+                      "events": [
+                        {
+                          "introduced": "0"
+                        },
+                        {
+                          "fixed": "0.4.0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "database_specific": {
+                "severity": "LOW"
+              }
+            }
+          ],
+          "groups": [
+            {
+              "ids": [
+                "TEST-2026-0004"
+              ],
+              "aliases": [
+                "TEST-2026-0004"
+              ],
+              "max_severity": ""
+            },
+            {
+              "ids": [
+                "TEST-2026-0005"
+              ],
+              "aliases": [
+                "TEST-2026-0005"
+              ],
+              "max_severity": "2.0"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "experimental_config": {
+    "licenses": {
+      "summary": false,
+      "allowlist": []
+    }
+  }
+}

@@ -1,0 +1,11 @@
+name: fixture
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.5.0
+  purchases_flutter: ^7.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

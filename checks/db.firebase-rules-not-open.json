@@ -1,0 +1,24 @@
+{
+  "id": "check.db.firebase-rules-not-open",
+  "sec_ids": [
+    "SEC-DB-001"
+  ],
+  "applies_when": {},
+  "op": "regex_absent",
+  "params": {
+    "files": [
+      "**/firestore.rules",
+      "**/database.rules.json",
+      "**/*.firestore.rules"
+    ],
+    "pattern": "allow\\s+[\\w\\s,]+:\\s*if\\s+true\\s*;|allow\\s+[\\w\\s,]+\\s*;|\"\\.(?:read|write)\"\\s*:\\s*(?:true|\"true\")|request\\.time\\s*<\\s*timestamp\\.date",
+    "note": "database rule open to every caller (Firebase)",
+    "not_applicable_reason": "no Firestore or Realtime Database rules file"
+  },
+  "on_true": "NOT ASSESSED: NEEDS DYNAMIC TEST",
+  "on_false": "FAIL",
+  "fixtures": {
+    "pass": "test/fixtures/checks/firebase-rules-not-open/pass",
+    "fail": "test/fixtures/checks/firebase-rules-not-open/fail"
+  }
+}

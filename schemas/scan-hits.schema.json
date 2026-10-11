@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hullproof.invalid/engine/scan-hits.schema.json",
+  "title": "Hullproof Engine normalised scanner hits (scan/<tool>.json)",
+  "description": "One file per scanner. Hits are sorted by file, line, tool, rule_id. No secret value, no tool message text, no absolute path, no timing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "hits"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "tool": {"$ref": "#/$defs/tool"},
+    "hits": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["tool", "rule_id", "file", "line", "sec_ids", "severity_hint", "message_key"],
+        "properties": {
+          "tool": {"$ref": "#/$defs/tool"},
+          "rule_id": {"type": "string", "minLength": 1, "maxLength": 200},
+          "file": {"type": "string", "minLength": 1, "maxLength": 300, "pattern": "^[^/\\\\]"},
+          "line": {"type": "integer", "minimum": 0, "description": "1 based; 0 only when the tool reports no line"},
+          "sec_ids": {"type": "array", "items": {"type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$"}, "description": "empty means unmapped: shown in the report, never in the gate"},
+          "severity_hint": {"type": ["string", "null"], "maxLength": 40},
+          "message_key": {"type": "string", "minLength": 1, "maxLength": 240}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "tool": {"enum": ["semgrep", "osv-scanner", "gitleaks", "trivy", "checkov"]}
+  }
+}

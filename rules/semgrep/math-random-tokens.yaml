@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/math-random-tokens.yaml).
+#
+rules:
+  - id: hullproof-math-random-token
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Math.random is not a secure random source. Use crypto.randomUUID or crypto.getRandomValues
+      for tokens, codes, secrets and identifiers that must be unguessable.
+    patterns:
+      - pattern-either:
+          - pattern: $N = <... Math.random() ...>
+          - pattern: function $N(...) { ... Math.random(); ... }
+          - pattern: function $N(...) { ... return <... Math.random() ...>; }
+          - pattern: '{..., $N: <... Math.random() ...>, ...}'
+      - metavariable-regex:
+          metavariable: $N
+          regex: (?i)^(.*(token|secret|invite|reset|nonce|otp|password|apikey|api_key|session|share|code|salt).*|id|.*_id|[a-z]*Id)$
+    metadata:
+      sec_ids: [SEC-DATA-001, SEC-AUTH-001]
+      severity_hint: HIGH
+      confidence: MEDIUM

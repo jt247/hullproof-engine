@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/verify-result-unused.yaml).
+#
+rules:
+  - id: hullproof-verify-result-unused
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      The result of a signature or token check is computed and then not used to reject the request. The check runs and the
+      handler goes on regardless, so a forged request is accepted. Test the result and return an error, or throw, when it is false.
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: const $OK = $V(...);
+                  - pattern: const $OK = await $V(...);
+                  - pattern: const $OK = $O.$V(...);
+                  - pattern: const $OK = await $O.$V(...);
+                  - pattern: let $OK = $V(...);
+                  - pattern: let $OK = $O.$V(...);
+              - pattern-not-inside: |
+                  {
+                    ...
+                    const $OK = ...;
+                    ...
+                    <... $OK ...>
+                  }
+              - pattern-not-inside: |
+                  {
+                    ...
+                    let $OK = ...;
+                    ...
+                    <... $OK ...>
+                  }
+          - patterns:
+              - pattern-either:
+                  - pattern: $V(...);
+                  - pattern: await $V(...);
+                  - pattern: $O.$V(...);
+                  - pattern: await $O.$V(...);
+              - pattern-not-inside: const $X = ...;
+              - pattern-not-inside: let $X = ...;
+              - pattern-not-inside: $X = ...;
+              - pattern-not-inside: return ...;
+              - pattern-not-inside: if (...) ...
+              - pattern-not-inside: throw ...;
+              - pattern-not-inside: $A && $B
+              - pattern-not-inside: $A || $B
+              - pattern-not-inside: '!$A'
+              - pattern-not-inside: '$A ? $B : $C'
+      - metavariable-regex:
+          metavariable: $V
+          regex: ^(verifySignature|verifyHmac|verifyWebhookSignature|isValidSignature|isSignatureValid|validateSignature|checkSignature|compareSignatures|timingSafeEqual|safeCompare|verifyTokenSignature)$
+    metadata:
+      sec_ids: [SEC-API-101, SEC-AUTH-002]
+      severity_hint: CRITICAL
+      confidence: MEDIUM
+      note: >-
+        Finds a boolean returning check whose result is thrown away, or stored in a variable that nothing reads afterwards. The
+        function names are a convention guess, extend the list with the project's own verify helpers. A check that throws on
+        failure, such as a library constructEvent call, is not in the list.

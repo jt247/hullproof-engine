@@ -1,0 +1,7 @@
+service: fixture
+provider:
+  name: aws
+  runtime: python3.12
+functions:
+  ask:
+    handler: app.views.ask

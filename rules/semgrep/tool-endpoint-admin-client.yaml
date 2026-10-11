@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Rare Phronesis Limited
+# Copied from the Hullproof kit (kit/tools/hullproof/rules/tool-endpoint-admin-client.yaml).
+#
+rules:
+  - id: hullproof-tool-handler-admin-client-no-scope
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      A tool handler (an MCP server tool or a model tool) uses an admin or service role client and
+      takes no argument that could carry the caller (the handler has at most one parameter, its input).
+      Anyone who can call the tool, or any prompt that makes the model call it, acts with the service
+      role's powers. Use a client that carries the caller's own token, or check the caller's scope and
+      ownership of every id before using the admin client. Flagged for review.
+    # The admin client names below are heuristics. Edit them to match the project. A handler with two or
+    # more parameters is not flagged, because the second one (the MCP extra argument, or a context object)
+    # is where the caller identity arrives. Read those handlers by hand.
+    patterns:
+      - pattern-inside:
+          pattern-either:
+            - pattern: $S.tool(..., async () => { ... }, ...)
+            - pattern: $S.tool(..., async ($A) => { ... }, ...)
+            - pattern: $S.registerTool(..., async () => { ... }, ...)
+            - pattern: $S.registerTool(..., async ($A) => { ... }, ...)
+            - pattern: '$S.addTool({..., execute: async () => { ... }, ...})'
+            - pattern: '$S.addTool({..., execute: async ($A) => { ... }, ...})'
+            - pattern: '$T({..., execute: async () => { ... }, ...})'
+            - pattern: '$T({..., execute: async ($A) => { ... }, ...})'
+            - pattern: '$T({..., func: async () => { ... }, ...})'
+            - pattern: '$T({..., func: async ($A) => { ... }, ...})'
+            - pattern: $S.setRequestHandler(CallToolRequestSchema, async () => { ... })
+            - pattern: $S.setRequestHandler(CallToolRequestSchema, async ($A) => { ... })
+      # A registration made inside a function that takes a parameter (a per request or per user factory)
+      # is not flagged: the caller is captured by the closure. Read those by hand.
+      - pattern-not-inside: |
+          function $F($P, ...) { ... $S.tool(...); ... }
+      - pattern-not-inside: |
+          async function $F($P, ...) { ... $S.tool(...); ... }
+      - pattern-not-inside: |
+          ($P, ...) => { ... $S.tool(...); ... }
+      - pattern-not-inside: |
+          async ($P, ...) => { ... $S.tool(...); ... }
+      - pattern-not-inside: |
+          function $F($P, ...) { ... $S.registerTool(...); ... }
+      - pattern-not-inside: |
+          async function $F($P, ...) { ... $S.registerTool(...); ... }
+      - pattern-not-inside: |
+          ($P, ...) => { ... $S.registerTool(...); ... }
+      - pattern-not-inside: |
+          async ($P, ...) => { ... $S.registerTool(...); ... }
+      - pattern-not-inside: |
+          function $F($P, ...) { ... $S.addTool(...); ... }
+      - pattern-not-inside: |
+          async function $F($P, ...) { ... $S.addTool(...); ... }
+      - pattern-not-inside: |
+          ($P, ...) => { ... $S.addTool(...); ... }
+      - pattern-not-inside: |
+          async ($P, ...) => { ... $S.addTool(...); ... }
+      - pattern-not-inside: |
+          function $F($P, ...) { ... $S.setRequestHandler(...); ... }
+      - pattern-not-inside: |
+          async function $F($P, ...) { ... $S.setRequestHandler(...); ... }
+      - pattern-not-inside: |
+          ($P, ...) => { ... $S.setRequestHandler(...); ... }
+      - pattern-not-inside: |
+          async ($P, ...) => { ... $S.setRequestHandler(...); ... }
+      - pattern-either:
+          - patterns:
+              - pattern: $ADM(...)
+              - metavariable-regex:
+                  metavariable: $ADM
+                  regex: (?i)^(create|get|make|build|init)?(supabase)?(admin|service|servicerole|privileged)(supabase)?(client|db|database)?$
+          - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+          - pattern: process.env.SERVICE_ROLE_KEY
+          - pattern: supabaseAdmin
+          - pattern: $X.auth.admin
+          - pattern: adminClient
+          - pattern: serviceClient
+    metadata:
+      sec_ids: [SEC-AI-020, SEC-AI-021, SEC-AGENT-008, SEC-SECRETS-003]
+      severity_hint: CRITICAL
+      confidence: LOW
+      note: >-
+        Pattern based lead for review. The finding is on the admin client use inside the handler. A caller
+        check made before the handler runs (in middleware) is not seen and shows up here, so confirm where
+        the caller is authenticated.

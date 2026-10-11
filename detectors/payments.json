@@ -1,0 +1,19 @@
+{
+  "category": "payments",
+  "entries": [
+    {"id": "adyen", "deps": {"npm": ["@adyen/*"], "pypi": ["adyen"]}},
+    {"id": "app-store-billing", "deps": {"npm": ["react-native-iap", "expo-in-app-purchases"], "pub": ["in_app_purchase"], "maven": ["com.android.billingclient*"]}, "imports": {"swift": ["StoreKit"]}},
+    {"id": "braintree", "deps": {"npm": ["braintree", "braintree-web"], "pypi": ["braintree"], "rubygems": ["braintree"]}},
+    {"id": "flutterwave", "deps": {"npm": ["flutterwave-node-v3", "flutterwave-react-v3"], "pub": ["flutterwave_standard"]}},
+    {"id": "lemon-squeezy", "deps": {"npm": ["@lemonsqueezy/lemonsqueezy.js"]}},
+    {"id": "mollie", "deps": {"npm": ["@mollie/api-client"], "pypi": ["mollie-api-python"], "composer": ["mollie/mollie-api-php"]}},
+    {"id": "paddle", "deps": {"npm": ["@paddle/*"], "pypi": ["paddle-python-sdk"]}},
+    {"id": "paypal", "deps": {"npm": ["@paypal/*"], "pypi": ["paypalrestsdk", "paypal-server-sdk"]}},
+    {"id": "paystack", "deps": {"npm": ["paystack", "@paystack/*", "react-paystack", "paystack-api"], "pub": ["flutter_paystack"]}, "signals": [{"files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.py", "*.php", "*.rb", "*.go", "*.dart"], "regex": "api\\.paystack\\.co"}]},
+    {"id": "polar", "deps": {"npm": ["@polar-sh/*"], "pypi": ["polar-sdk"]}},
+    {"id": "razorpay", "deps": {"npm": ["razorpay"], "pypi": ["razorpay"]}},
+    {"id": "revenuecat", "deps": {"npm": ["react-native-purchases"], "pub": ["purchases_flutter"]}},
+    {"id": "square", "deps": {"npm": ["square"], "pypi": ["squareup"]}},
+    {"id": "stripe", "deps": {"npm": ["stripe", "@stripe/*"], "pypi": ["stripe"], "go": ["github.com/stripe/stripe-go*"], "rubygems": ["stripe"], "composer": ["stripe/stripe-php"], "maven": ["com.stripe:stripe-java"], "nuget": ["Stripe.net"], "pub": ["flutter_stripe"]}, "imports": {"js": ["stripe", "@stripe/stripe-js"], "python": ["stripe"]}}
+  ]
+}

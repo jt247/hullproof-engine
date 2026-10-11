@@ -1,0 +1,31 @@
+{
+  "id": "check.web.cors-no-reflected-origin",
+  "sec_ids": [
+    "SEC-WEB-022"
+  ],
+  "applies_when": {},
+  "op": "regex_absent",
+  "params": {
+    "files": [
+      "**/*.{ts,tsx,js,jsx,mjs,cjs,py,rb,php,go,java,kt,cs,rs,dart,swift,vue,svelte,astro}"
+    ],
+    "exclude": [
+      "**/*.test.*",
+      "**/*.spec.*",
+      "**/__tests__/**",
+      "**/test/**",
+      "**/tests/**",
+      "**/fixtures/**"
+    ],
+    "pattern": "Access-Control-Allow-Origin[\"']?\\s*[,:=]\\s*(?:req|request|r|ctx|c|event)?\\.?(?:headers?\\.get\\(\\s*[\"']origin[\"']\\)|origin\\b|headers\\[[\"']origin[\"']\\])|Access-Control-Allow-Origin[\"']?\\s*[,:=]\\s*origin\\b|\\borigin\\s*:\\s*true\\b|CORS_(?:ORIGIN_)?ALLOW_ALL(?:_ORIGINS)?\\s*=\\s*True|SetIsOriginAllowed\\(\\s*\\w+\\s*=>\\s*true\\s*\\)|AllowOriginFunc:\\s*func\\([^)]*\\)\\s*bool\\s*\\{\\s*return\\s+true|\\$_SERVER\\[[\"']HTTP_ORIGIN[\"']\\]",
+    "ignore_case": true,
+    "note": "the response allows whatever origin the request names",
+    "not_applicable_reason": "no source file"
+  },
+  "on_true": "NOT ASSESSED: NEEDS DYNAMIC TEST",
+  "on_false": "FAIL",
+  "fixtures": {
+    "pass": "test/fixtures/checks/cors-no-reflected-origin/pass",
+    "fail": "test/fixtures/checks/cors-no-reflected-origin/fail"
+  }
+}
