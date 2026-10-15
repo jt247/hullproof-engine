@@ -1,0 +1,33 @@
+# Hullproof in GitHub Actions. Copy to .github/workflows/hullproof.yml.
+# Replace COMMIT_SHA with the full commit SHA of the Hullproof Action release you reviewed. Each action is pinned by commit SHA with
+# the release in a trailing comment; when you update one, replace the SHA and the comment together.
+# Use the pull_request event. Do not check out the head of a pull request under pull_request_target.
+name: hullproof
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  hullproof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jt247/hullproof-action@COMMIT_SHA
+        with:
+          fail-on: blocker
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: hullproof
+          path: .hullproof/ci
+          include-hidden-files: true
+          retention-days: 7

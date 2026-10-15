@@ -1,8 +1,8 @@
 // Loads every check (checks/*.json and the TypeScript checks in src/checks/code/), runs the ones that apply, and returns
 // checks.json. Deterministic: files and checks are sorted, no clock, no network, no program is run.
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cmp } from '../util.ts';
 import type { CheckDefinition, CheckResult, CheckResultsFile, Stack } from '../types/index.ts';
@@ -27,9 +27,16 @@ export function loadChecks(dir: string = CHECKS_DIR): AnyCheck[] {
 
 // sha256 of the check's own file: a JSON definition or the TypeScript module. Goes into machine_evidence.config_sha256.
 const shaCache = new Map<string, string>();
+// A module running from dist/ is hashed through its TypeScript twin in src/ (shipped with the package), so the same check gives the
+// same hash whether the engine runs from the sources or from the compiled build.
+const sourceFile = (p: string): string => {
+  if (!p.endsWith('.js')) return p;
+  const twin = p.replace(/\.js$/, '.ts').replace(`${sep}dist${sep}`, `${sep}src${sep}`);
+  return existsSync(twin) ? twin : p;
+};
 export function checkSha(c: AnyCheck): string {
   let s = shaCache.get(c.source);
-  if (!s) { s = createHash('sha256').update(readFileSync(c.source)).digest('hex'); shaCache.set(c.source, s); }
+  if (!s) { s = createHash('sha256').update(readFileSync(sourceFile(c.source))).digest('hex'); shaCache.set(c.source, s); }
   return s;
 }
 

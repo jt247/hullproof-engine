@@ -14,10 +14,14 @@
     "entry_points": {"type": "array", "items": {"$ref": "#/$defs/entry_point"}},
     "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}},
     "config": {
-      "type": "object", "additionalProperties": false, "required": ["supabase", "firebase", "local_vocab", "auth_helper_candidates"],
+      "type": "object", "additionalProperties": false, "required": ["supabase", "firebase", "android", "ios", "cargo", "secrets", "local_vocab", "auth_helper_candidates"],
       "properties": {
         "supabase": {"type": ["object", "null"], "additionalProperties": false, "required": ["tables"], "properties": {"tables": {"type": "array", "items": {"$ref": "#/$defs/supabase_table"}}}},
         "firebase": {"type": ["object", "null"], "additionalProperties": false, "required": ["rules"], "properties": {"rules": {"type": "array", "items": {"$ref": "#/$defs/firebase_rule"}}}},
+        "android": {"type": ["object", "null"], "additionalProperties": false, "required": ["manifests", "network_security"], "properties": {"manifests": {"type": "array", "items": {"$ref": "#/$defs/android_manifest"}}, "network_security": {"type": "array", "items": {"$ref": "#/$defs/network_security"}}}},
+        "ios": {"type": ["object", "null"], "additionalProperties": false, "required": ["plists"], "properties": {"plists": {"type": "array", "items": {"$ref": "#/$defs/ios_plist"}}}},
+        "cargo": {"type": ["object", "null"], "additionalProperties": false, "required": ["manifests"], "properties": {"manifests": {"type": "array", "items": {"$ref": "#/$defs/cargo_manifest"}}}},
+        "secrets": {"type": "array", "items": {"$ref": "#/$defs/config_secret"}},
         "local_vocab": {"type": "object", "additionalProperties": false, "required": ["auth_helpers", "role_helpers"], "properties": {"auth_helpers": {"type": "array", "items": {"type": "string"}}, "role_helpers": {"type": "array", "items": {"type": "string"}}}},
         "auth_helper_candidates": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "entry_points", "file", "line"], "properties": {"name": {"type": "string", "minLength": 1}, "entry_points": {"type": "integer", "minimum": 1}, "file": {"type": "string"}, "line": {"type": "integer", "minimum": 1}}}}
       }
@@ -96,7 +100,7 @@
       "required": ["id", "kind", "framework", "file", "line", "end_line", "method", "path", "name", "handler", "confidence", "test_code", "tags", "protections", "reads", "data", "outbound"],
       "properties": {
         "id": {"type": "string", "minLength": 1},
-        "kind": {"enum": ["http_route", "webhook", "server_action", "page", "ai_tool", "job", "graphql_resolver", "rpc", "message_consumer", "websocket", "deep_link"]},
+        "kind": {"enum": ["http_route", "webhook", "server_action", "page", "ai_tool", "job", "graphql_resolver", "rpc", "message_consumer", "websocket", "deep_link", "ipc"]},
         "framework": {"type": "string", "minLength": 1},
         "file": {"$ref": "#/$defs/path"},
         "line": {"type": "integer", "minimum": 1},
@@ -168,6 +172,44 @@
         "owner_bound": {"type": "boolean"},
         "always_true": {"type": "boolean"},
         "owner_wildcard": {"type": "boolean"}
+      }
+    },
+    "config_secret": {
+      "type": "object", "additionalProperties": false, "required": ["file", "line", "key", "where"],
+      "properties": {"file": {"$ref": "#/$defs/path"}, "line": {"type": "integer", "minimum": 1}, "key": {"type": "string"}, "where": {"enum": ["android manifest", "android strings", "ios plist"]}}
+    },
+    "android_manifest": {
+      "type": "object", "additionalProperties": false, "required": ["file", "package", "line", "debuggable", "allow_backup", "uses_cleartext_traffic", "network_security_config", "target_sdk", "permissions", "components"],
+      "properties": {
+        "file": {"$ref": "#/$defs/path"}, "package": {"type": ["string", "null"]}, "line": {"type": "integer", "minimum": 1},
+        "debuggable": {"type": ["boolean", "null"]}, "allow_backup": {"type": ["boolean", "null"]}, "uses_cleartext_traffic": {"type": ["boolean", "null"]},
+        "network_security_config": {"type": ["string", "null"]}, "target_sdk": {"type": ["integer", "null"]}, "permissions": {"type": "array", "items": {"type": "string"}},
+        "components": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["kind", "name", "line", "exported", "exported_explicit", "permission", "launcher", "filters"],
+          "properties": {
+            "kind": {"enum": ["activity", "service", "receiver", "provider"]}, "name": {"type": "string"}, "line": {"type": "integer", "minimum": 1},
+            "exported": {"type": "boolean"}, "exported_explicit": {"type": "boolean"}, "permission": {"type": ["string", "null"]}, "launcher": {"type": "boolean"},
+            "filters": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["actions", "categories", "schemes", "hosts", "paths"], "properties": {
+              "actions": {"type": "array", "items": {"type": "string"}}, "categories": {"type": "array", "items": {"type": "string"}}, "schemes": {"type": "array", "items": {"type": "string"}},
+              "hosts": {"type": "array", "items": {"type": "string"}}, "paths": {"type": "array", "items": {"type": "string"}}}}}
+          }
+        }}
+      }
+    },
+    "network_security": {
+      "type": "object", "additionalProperties": false, "required": ["file", "line", "cleartext_base", "cleartext_domains", "trusts_user_certs", "pinned_domains"],
+      "properties": {"file": {"$ref": "#/$defs/path"}, "line": {"type": "integer", "minimum": 1}, "cleartext_base": {"type": ["boolean", "null"]}, "cleartext_domains": {"type": "array", "items": {"type": "string"}}, "trusts_user_certs": {"type": "boolean"}, "pinned_domains": {"type": "integer", "minimum": 0}}
+    },
+    "ios_plist": {
+      "type": "object", "additionalProperties": false, "required": ["file", "ats_arbitrary_loads", "ats_line", "url_schemes", "associated_domains", "usage_descriptions"],
+      "properties": {"file": {"$ref": "#/$defs/path"}, "ats_arbitrary_loads": {"type": ["boolean", "null"]}, "ats_line": {"type": ["integer", "null"]}, "url_schemes": {"type": "array", "items": {"type": "string"}}, "associated_domains": {"type": "array", "items": {"type": "string"}}, "usage_descriptions": {"type": "array", "items": {"type": "string"}}}
+    },
+    "cargo_manifest": {
+      "type": "object", "additionalProperties": false, "required": ["file", "line", "name", "edition", "dependencies", "release_debug", "release_overflow_checks", "unsafe_code_lint", "has_lock", "binary"],
+      "properties": {
+        "file": {"$ref": "#/$defs/path"}, "line": {"type": "integer", "minimum": 1}, "name": {"type": ["string", "null"]}, "edition": {"type": ["string", "null"]},
+        "dependencies": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["name", "source", "version", "line"], "properties": {"name": {"type": "string"}, "source": {"enum": ["registry", "git", "path"]}, "version": {"type": ["string", "null"]}, "line": {"type": "integer", "minimum": 1}}}},
+        "release_debug": {"type": ["boolean", "null"]}, "release_overflow_checks": {"type": ["boolean", "null"]}, "unsafe_code_lint": {"type": ["string", "null"]}, "has_lock": {"type": "boolean"}, "binary": {"type": "boolean"}
       }
     }
   }

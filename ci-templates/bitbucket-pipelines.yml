@@ -1,0 +1,24 @@
+# Hullproof in Bitbucket Pipelines. Copy into bitbucket-pipelines.yml.
+# Before you use it, set the image to the Hullproof image digest from the release notes. The step runs the engine with no model and no
+# secret, writes four files, and fails when a finding at or above the level in --fail-on failed. It uses the Free edition requirements.
+image:
+  name: ghcr.io/jt247/hullproof-action@sha256:REPLACE_WITH_THE_DIGEST_FROM_THE_RELEASE_NOTES
+
+definitions:
+  steps:
+    - step: &hullproof
+        name: Hullproof
+        size: 2x
+        script:
+          - export HULLPROOF_TRUST_REPO_OWNER=1
+          - hullproof ci "$BITBUCKET_CLONE_DIR" --out "$BITBUCKET_CLONE_DIR/.hullproof" --artifacts "$BITBUCKET_CLONE_DIR/hullproof-ci" --fail-on blocker
+        artifacts:
+          - hullproof-ci/**
+
+pipelines:
+  pull-requests:
+    "**":
+      - step: *hullproof
+  branches:
+    main:
+      - step: *hullproof

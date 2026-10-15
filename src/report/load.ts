@@ -5,11 +5,17 @@ import { cmp } from '../util.ts';
 import type { CheckResultsFile, CodeMap, FindingsFile, ResultRow, Stack, ToolMeta } from '../types/index.ts';
 import type { ScanInfo } from '../commands/scan.ts';
 import type { SurfaceFile } from './surface.ts';
+import { huntDir, readResult, readSkipped, readSynthesis } from '../confirm/store.ts';
+import type { HuntFiles } from './hunt-section.ts';
+import type { ProveFiles } from './prove-section.ts';
+import { loadProveFiles } from './prove-section.ts';
 
 export interface ScanFolder {
   dir: string; info: ScanInfo; stack: Stack; checks: CheckResultsFile; results: ResultRow[];
   findingsText: string; findings: FindingsFile; metas: ToolMeta[]; surface: SurfaceFile;
   codemap: CodeMap | null;               // null for a scan folder written before the code map existed
+  hunt: HuntFiles;                       // the hunt files, when `hullproof hunt` ran for this commit
+  prove?: ProveFiles;                    // the proof sandbox files, when `hullproof prove` ran for this commit
   reasons: Record<string, string | null>; // tool -> plain English reason it did not run, from scan/<tool>.detail.json
 }
 
@@ -31,7 +37,10 @@ export function loadScan(dir: string): ScanFolder {
     const p = join(scanDir, `${m.tool}.detail.json`);
     reasons[m.tool] = existsSync(p) ? json<{ not_run_reason: string | null }>(p).not_run_reason : null;
   }
+  const hd = huntDir(dir);
   return {
+    hunt: { result: readResult(hd), synthesis: readSynthesis(hd), skipped: readSkipped(hd) },
+    prove: loadProveFiles(dir),
     reasons, dir, info: json(join(dir, 'scan.json')), stack: json(join(dir, 'stack.json')), checks: json(join(dir, 'checks.json')),
     results: json(join(dir, 'results.json')), findingsText, findings: JSON.parse(block[1]) as FindingsFile, metas,
     surface: json(join(dir, 'surface.json')),

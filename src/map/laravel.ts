@@ -22,7 +22,7 @@ const phpPath = (p: string): string => p.replace(/\{(\w+)\??(?::[^}]*)?\}/g, ':$
 const strs = (s: string): string[] => [...s.matchAll(/['"]([^'"]*)['"]/g)].map((m) => m[1]);
 
 export function laravelFiles(repo: Repo): string[] {
-  return repo.filesOf('php').filter((f) => /(?:^|\/)routes\/(?!console|channels)[\w-]+\.php$/.test(f));
+  return repo.filesOf('php').filter((f) => /(?:^|\/)routes\/(?!console|channels)[\w.-]+\.php$/.test(f));
 }
 
 function chainAt(v: FileView, at: number): { calls: Call[]; end: number } {
@@ -30,14 +30,14 @@ function chainAt(v: FileView, at: number): { calls: Call[]; end: number } {
   const calls: Call[] = [];
   let pos = at + 'Route::'.length;
   for (let guard = 0; guard < 24; guard++) {
-    const id = /^\s*(\w+)\s*\(/.exec(m.slice(pos, pos + 80));
+    const id = /^\s*(\w+)\s*\(/.exec(m.slice(pos, pos + 800));
     if (!id) break;
     const open = pos + id[0].length - 1;
     const close = closeOf(m, open);
     if (close < 0) break;
     calls.push({ name: id[1], open, close });
     pos = close;
-    const arrow = /^\s*->\s*/.exec(m.slice(pos, pos + 40));
+    const arrow = /^\s*->\s*/.exec(m.slice(pos, pos + 800)); // comments are blank in the masked copy and can be long
     if (!arrow) break;
     pos += arrow[0].length;
   }

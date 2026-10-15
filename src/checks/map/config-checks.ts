@@ -6,6 +6,7 @@ import type { CodeCheck } from '../types.ts';
 import { mapCheck } from './shared.ts';
 
 const source = fileURLToPath(import.meta.url);
+const NATIVE_FIXTURES = { pass: 'test/fixtures/map-native/pass', fail: 'test/fixtures/map-native/fail' };
 const CLIENT_ROLES = new Set(['anon', 'authenticated', 'public']);
 const tables = (m: { config: { supabase: { tables: SupabaseTable[] } | null } }): SupabaseTable[] => m.config.supabase?.tables ?? [];
 const alwaysTrue = (e: string | null): boolean => e !== null && /^\(?\s*true\s*\)?$/i.test(e.trim());
@@ -67,4 +68,12 @@ export const firebaseAuthOnlyRule = mapCheck({
   })),
 });
 
-export const CONFIG_CHECKS: CodeCheck[] = [supabaseOpenTable, supabasePrivilegedColumnGrant, supabasePolicyTrustsClaims, firebaseAuthOnlyRule];
+export const mobileSecretInConfig = mapCheck({
+  id: 'check.map.mobile-secret-in-config', sec_ids: ['SEC-MOBILE-001'], name: 'mobile-secret-in-config', source, fixtures: NATIVE_FIXTURES,
+  pattern: 'a value written in AndroidManifest.xml, an Android strings file or an iOS Info.plist under a name that says secret, password or private key',
+  none: 'the code map has no Android or iOS configuration file',
+  candidates: (m) => (m.config.android?.manifests.length ?? 0) + (m.config.ios?.plists.length ?? 0),
+  fails: (m) => m.config.secrets.map((x): CheckEvidence => ({ file: x.file, line: x.line, note: `${x.where}: the name ${x.key} holds a value written into the file, and this file ships inside the app` })),
+});
+
+export const CONFIG_CHECKS: CodeCheck[] = [supabaseOpenTable, supabasePrivilegedColumnGrant, supabasePolicyTrustsClaims, firebaseAuthOnlyRule, mobileSecretInConfig];

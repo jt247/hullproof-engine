@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "id": "rust",
+  "name": "Rust",
+  "summary": "Cargo.toml (dependency sources, release profile, lockfile) and axum and actix web routes with the layers and extractors that protect them. Handler bodies are not read.",
+  "edition": "free",
+  "languages": [
+    "rust"
+  ],
+  "frameworks": [
+    "axum",
+    "actix-web"
+  ],
+  "level": "L2",
+  "limits": [
+    "Handler bodies are not read, so data store and outbound call checks stay silent for Rust."
+  ],
+  "parts": {
+    "detectors": [
+      "rust",
+      "axum",
+      "actix-web"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/rust.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/rust.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/config-checks.ts"
+      },
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/packs/rust/fail",
+    "fixed_dir": "test/fixtures/packs/rust/pass",
+    "internal": true,
+    "answer_keys": [
+      "outside_repo"
+    ],
+    "result": "packs/rust/fixture-result.json"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "id": "supabase",
+  "name": "Supabase",
+  "summary": "Tables, grants and row level security policies read from migration files, with checks for open tables, privileged column grants and policies that trust user metadata.",
+  "edition": "free",
+  "languages": [
+    "sql"
+  ],
+  "frameworks": [
+    "supabase"
+  ],
+  "level": "L3",
+  "limits": [
+    "Policies and grants are read from migration files, not from a live database."
+  ],
+  "parts": {
+    "detectors": [
+      "sql"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/config.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/config.ts"
+      }
+    ],
+    "rules": [],
+    "checks": [
+      {
+        "id": "check.map.supabase-open-table"
+      },
+      {
+        "id": "check.map.supabase-privileged-column-grant"
+      },
+      {
+        "id": "check.map.supabase-policy-trusts-claims"
+      },
+      {
+        "id": "check.db.rls-every-table"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/config-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map/fail",
+    "fixed_dir": "test/fixtures/map/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/supabase/fixture-result.json"
+  }
+}

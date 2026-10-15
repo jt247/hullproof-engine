@@ -1,0 +1,38 @@
+# Hullproof in Azure Pipelines. Copy into azure-pipelines.yml.
+# Before you use it, set the image to the Hullproof image digest from the release notes. The job runs the engine with no model and no
+# secret, writes four files, and fails the run when a finding at or above the level in --fail-on failed. It uses the Free edition requirements.
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - "*"
+
+pool:
+  vmImage: ubuntu-latest
+
+resources:
+  containers:
+    - container: hullproof
+      image: ghcr.io/jt247/hullproof-action@sha256:REPLACE_WITH_THE_DIGEST_FROM_THE_RELEASE_NOTES
+
+jobs:
+  - job: hullproof
+    container: hullproof
+    timeoutInMinutes: 20
+    steps:
+      - checkout: self
+        persistCredentials: false
+        fetchDepth: 20
+      - script: |
+          export HULLPROOF_TRUST_REPO_OWNER=1
+          hullproof ci "$(Build.SourcesDirectory)" --out "$(Build.SourcesDirectory)/.hullproof" --artifacts "$(Build.ArtifactStagingDirectory)/hullproof" --fail-on blocker
+        displayName: Hullproof
+      - task: PublishBuildArtifacts@1
+        condition: always()
+        inputs:
+          PathtoPublish: $(Build.ArtifactStagingDirectory)/hullproof
+          ArtifactName: hullproof

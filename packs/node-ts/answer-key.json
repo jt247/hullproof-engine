@@ -1,0 +1,220 @@
+{
+  "pack": "node-ts",
+  "fail_dir": "test/fixtures/map/fail",
+  "pass_dir": "test/fixtures/map/pass",
+  "stacks": [
+    "express",
+    "nextapp",
+    "nest"
+  ],
+  "detect_expected": [
+    "express",
+    "nextjs",
+    "javascript",
+    "typescript"
+  ],
+  "mapped_what": "entry points",
+  "mapped": [
+    "http_route DELETE /api/notes/:id",
+    "http_route DELETE /api/notes/:id",
+    "http_route DELETE /notes/:id",
+    "http_route GET /api/export",
+    "http_route GET /api/export",
+    "http_route GET /api/items",
+    "http_route GET /api/items",
+    "http_route GET /notes",
+    "http_route GET /notes/export",
+    "http_route POST /admin/users/role",
+    "http_route POST /api/admin/users",
+    "http_route POST /api/admin/users",
+    "http_route POST /api/import",
+    "http_route POST /api/import",
+    "http_route POST /api/login",
+    "http_route POST /api/login",
+    "http_route POST /api/notes",
+    "http_route POST /api/notes",
+    "http_route POST /api/upload",
+    "http_route POST /api/upload",
+    "http_route POST /notes",
+    "http_route POST /notes/upload",
+    "server_action POST updateProfile",
+    "webhook POST /api/webhooks/pay",
+    "webhook POST /webhooks/pay",
+    "webhook POST /webhooks/pay"
+  ],
+  "flaws": [
+    {
+      "check": "admin-route-without-role",
+      "stack": "express"
+    },
+    {
+      "check": "admin-route-without-role",
+      "stack": "nest"
+    },
+    {
+      "check": "admin-route-without-role",
+      "stack": "nextapp"
+    },
+    {
+      "check": "data-read-without-auth",
+      "stack": "express"
+    },
+    {
+      "check": "data-read-without-auth",
+      "stack": "nest"
+    },
+    {
+      "check": "data-read-without-auth",
+      "stack": "nextapp"
+    },
+    {
+      "check": "mutating-route-without-auth",
+      "stack": "express"
+    },
+    {
+      "check": "mutating-route-without-auth",
+      "stack": "nest"
+    },
+    {
+      "check": "mutating-route-without-auth",
+      "stack": "nextapp"
+    },
+    {
+      "check": "privileged-action-without-audit",
+      "stack": "express"
+    },
+    {
+      "check": "privileged-action-without-audit",
+      "stack": "nest"
+    },
+    {
+      "check": "privileged-action-without-audit",
+      "stack": "nextapp"
+    },
+    {
+      "check": "privileged-field-from-request",
+      "stack": "express"
+    },
+    {
+      "check": "privileged-field-from-request",
+      "stack": "nest"
+    },
+    {
+      "check": "privileged-field-from-request",
+      "stack": "nextapp"
+    },
+    {
+      "check": "redirect-from-request",
+      "stack": "express"
+    },
+    {
+      "check": "redirect-from-request",
+      "stack": "nextapp"
+    },
+    {
+      "check": "request-url-fetched",
+      "stack": "express"
+    },
+    {
+      "check": "request-url-fetched",
+      "stack": "nextapp"
+    },
+    {
+      "check": "webhook-verify-before-use",
+      "stack": "express"
+    },
+    {
+      "check": "webhook-verify-before-use",
+      "stack": "nest"
+    },
+    {
+      "check": "webhook-verify-before-use",
+      "stack": "nextapp"
+    },
+    {
+      "check": "write-by-id-without-owner",
+      "stack": "express"
+    },
+    {
+      "check": "write-by-id-without-owner",
+      "stack": "nest"
+    },
+    {
+      "check": "write-by-id-without-owner",
+      "stack": "nextapp"
+    }
+  ],
+  "recorded": [
+    {
+      "name": "hullproof-demo",
+      "kind": "demo",
+      "blind_key": true,
+      "source": "bench/PHASE2-MEASURED-2026-10-11.md sections 2.1 and 2.2 (open core rules, new checks as leads), key from the Pro repository, the whole demo app, which includes flaws in Supabase configuration, infrastructure files and CI as well as in application code, so this recall belongs to the engine on this app and not to this pack alone",
+      "mapped": {
+        "what": "entry points",
+        "expected": 27,
+        "matched": 27,
+        "extra": 0
+      },
+      "flaws": {
+        "planted": 30,
+        "found": 20,
+        "false_findings": 0
+      },
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    },
+    {
+      "name": "mikro-orm/nestjs-realworld-example-app (seeded sample of its route registrations)",
+      "kind": "third_party",
+      "blind_key": true,
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "mapped": {
+        "what": "entry points (real route registrations)",
+        "expected": 21,
+        "matched": 21,
+        "extra": 0
+      },
+      "flaws": null,
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    },
+    {
+      "name": "vercel/commerce (seeded sample of its route registrations)",
+      "kind": "third_party",
+      "blind_key": true,
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "mapped": {
+        "what": "entry points (real route registrations)",
+        "expected": 6,
+        "matched": 6,
+        "extra": 0
+      },
+      "flaws": null,
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    }
+  ],
+  "proof": [
+    {
+      "scope": "Express with SQLite",
+      "planted": 4,
+      "proven": 4,
+      "runs": 3,
+      "false_proofs_fixed": 0,
+      "identical": true,
+      "source": "bench/PHASE4-MEASURED-2026-10-14.md (Colima, fixture test/fixtures/prove/express-sqlite)"
+    }
+  ],
+  "notes": [
+    "Entry points and flaws on the synthetic fixture come from a key kept in this repository, so that measurement is not blind. The blind measurement is the demo app, whose key lives in the Pro repository.",
+    "Express with SQLite is the only stack with a start recipe, measured on one fixture app. Next.js and NestJS entry points were measured on the demo and on Juice Shop only.",
+    "The NestJS fixture has no package.json, so NestJS detection is not exercised by it; its entry points are."
+  ]
+}

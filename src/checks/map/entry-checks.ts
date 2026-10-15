@@ -7,7 +7,7 @@ import { ev, evAt, has, hasAuth, judged, mapCheck, stateChanging, weakAuth, wher
 
 const source = fileURLToPath(import.meta.url);
 const exempt = (ep: EntryPoint): boolean => ep.tags.includes('auth_endpoint') || ep.tags.includes('public') || ep.tags.includes('webhook');
-const SENSITIVE = /user|account|profile|customer|member|order|payment|invoice|billing|card|address|email|message|note|file|upload|document|ticket|booking|patient|wallet|session|token|credential|subscription|contact|secret|key|transaction|history|log/i;
+const SENSITIVE = /user|account|profile|customer|member|order|payment|invoice|billing|card|address|email|message|note|file|upload|document|ticket|booking|patient|wallet|session|token|credential|subscription|contact|secret|key|transaction|history|log|basket|cart|chat|conversation|appointment|photo|prescription/i;
 
 export const mutatingRouteWithoutAuth = mapCheck({
   id: 'check.map.mutating-route-without-auth', sec_ids: ['SEC-API-001'], name: 'mutating-route-without-auth', source,
@@ -38,6 +38,16 @@ export const writeByIdWithoutOwner = mapCheck({
   candidates: (m) => m.entry_points.filter((e) => judged(e) && e.data.some((d) => (d.op === 'write' || d.op === 'delete') && d.by_id)).length,
   fails: (m) => m.entry_points.filter((e) => judged(e) && e.kind !== 'webhook' && !has(e, 'role_check')).flatMap((e) =>
     e.data.filter((d) => (d.op === 'write' || d.op === 'delete') && d.by_id && !d.owner_scoped).map((d) => evAt(e, `${where(e)} ${d.op === 'delete' ? 'deletes from' : 'updates'} ${d.target ?? 'a record'} by an id from the request and no owner value from the session is in the query`, d.line))),
+});
+
+export const readByIdWithoutOwner = mapCheck({
+  id: 'check.map.read-by-id-without-owner', sec_ids: ['SEC-AUTHZ-003'], name: 'read-by-id-without-owner', source,
+  fixtures: { pass: 'test/fixtures/map-idor/pass', fail: 'test/fixtures/map-idor/fail' },
+  pattern: 'a signed in entry point that reads a record with a personal data name by an id from the request, with no owner, user or tenant value from the session in the query and no role check',
+  none: 'the code map has no signed in entry point that reads a record by an id from the request',
+  candidates: (m) => m.entry_points.filter((e) => judged(e) && e.kind !== 'webhook' && !exempt(e) && has(e, 'session_read') && e.data.some((d) => d.op === 'read' && d.by_id && d.store !== 'filesystem' && d.target && SENSITIVE.test(d.target))).length,
+  fails: (m) => m.entry_points.filter((e) => judged(e) && e.kind !== 'webhook' && !exempt(e) && has(e, 'session_read') && !has(e, 'role_check') && !has(e, 'owner_filter')).flatMap((e) =>
+    e.data.filter((d) => d.op === 'read' && d.by_id && !d.owner_scoped && d.store !== 'filesystem' && d.target && SENSITIVE.test(d.target)).slice(0, 1).map((d) => evAt(e, `${where(e)} reads ${d.target ?? 'a record'} by an id from the request and no owner value from the session is in the query`, d.line))),
 });
 
 export const adminRouteWithoutRole = mapCheck({
@@ -101,6 +111,6 @@ export const redirectFromRequest = mapCheck({
 });
 
 export const ENTRY_CHECKS: CodeCheck[] = [
-  mutatingRouteWithoutAuth, dataReadWithoutAuth, writeByIdWithoutOwner, adminRouteWithoutRole, webhookVerifyBeforeUse,
+  mutatingRouteWithoutAuth, dataReadWithoutAuth, writeByIdWithoutOwner, readByIdWithoutOwner, adminRouteWithoutRole, webhookVerifyBeforeUse,
   requestUrlFetched, privilegedFieldFromRequest, privilegedActionWithoutAudit, redirectFromRequest,
 ];

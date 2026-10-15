@@ -52,7 +52,8 @@ interface Fail { source: string; sec_ids: string[]; evidence: { file: string; li
 interface TestItem { hit?: Hit; check?: CheckResult; ids: string[]; reason: string; kind: 'test' | 'lead'; total?: number }
 
 // Splits hits and failed checks into what can fail a requirement and what is only reported. In order:
-// 1. A secret (a Gitleaks hit or a rule mapped to a SEC-SECRETS ID) always stays: a live key is a leak wherever it is.
+// 1. A secret (a Gitleaks hit or a rule mapped to a SEC-SECRETS ID) stays in the gate wherever it is, unless the scanner marked the hit as an
+//    example value (h.noise: src/scanners/secret-noise.ts), which moves to an example value item.
 // 2. In a test path, a requirement about shipped test material (TEST_ARTIFACT_IDS) keeps failing; every other ID moves
 //    to a test code item.
 // 3. A hit of a rule whose tier is lead moves to a lead item.
@@ -61,6 +62,8 @@ export function separateTestCode(input: BuildInput): { input: BuildInput; test: 
   const hits: Hit[] = [];
   const tiers = loadTiers(input.rulesDirs ?? []);
   for (const h of input.hits) {
+    // A secret stays in the gate, unless the scanner found the value to be an example (a placeholder, or a shapeless rule in docs or fixtures).
+    if (isSecretHit(h) && h.noise) { test.push({ hit: h, ids: h.sec_ids, reason: h.noise, kind: 'test' }); continue; }
     const reason = isSecretHit(h) ? null : testCodeReason(h.file);
     if (reason) {
       const keep = h.sec_ids.filter((id) => TEST_ARTIFACT_IDS.has(id));
@@ -245,12 +248,13 @@ function buildFindingsWith(all: BuildInput, collapse: number | null): { file: Fi
     const ev = ts.flatMap((t) => (t.hit ? [{ file: t.hit.file, line: t.hit.line || undefined, note: `${tool} rule ${ruleId}` }] : t.check!.evidence));
     const ids = [...new Set(ts.flatMap((t) => t.ids))].filter((id) => input.kit.byId.has(id)).sort(cmp);
     const isLead = kind === 'lead';
+    const isExample = !isLead && ts.every((t) => !!t.hit?.noise);
     records.push({
       fingerprint: `OBS:${fpPath(file)}:${slug(`${isLead ? 'lead' : 'test code'} ${ruleId} ${ts[0].hit?.line ?? ''}`, 14)}`, kind: 'observation', sec_ids: ids,
-      title: clip(`${isLead ? 'Lead' : 'Test code'}: ${msg.title}`, 160), where: refs(ev).slice(0, 4),
+      title: clip(`${isLead ? 'Lead' : isExample ? 'Example value' : 'Test code'}: ${msg.title}`, 160), where: refs(ev).slice(0, 4),
       note: clip(isLead
         ? `Lead from ${ts[0].hit ? 'rule' : 'check'} ${ruleId}, whose confidence tier is lead: ${ts[0].reason}. Read the code; it never holds the gate.${ids.length ? ` If real it fails ${ids.join(', ')}.` : ''}${ts[0].total ? ` ${ts[0].total} places in all; the first 4 are listed here and every one is in checks.json.` : ''}`
-        : `Test code (${ts[0].reason}): kept as a lead, never in the gate.${ids.length ? ` In shipped code it would fail ${ids.join(', ')}.` : ''} ${msg.fix}`, 400),
+        : `${isExample ? 'Example value' : 'Test code'} (${ts[0].reason}): kept as a lead, never in the gate.${ids.length ? ` In shipped code it would fail ${ids.join(', ')}.` : ''} ${msg.fix}`, 400),
       raised_by: ['hullproof-engine'],
     });
   }
@@ -294,7 +298,7 @@ export function findingsJson(f: FindingsFile): string {
 export function findingsMarkdown(f: FindingsFile, json: string): string {
   return [
     '# Findings record', '',
-    `Written by the Hullproof Engine ${ENGINE_VERSION} for commit ${f.report.commit}. Every record comes from a check or a scanner rule, with no model. Validate it with tools/hullproof/ci/validate-findings.mjs from the kit.`, '',
+    `Written by the Hullproof Engine ${ENGINE_VERSION} for commit ${f.report.commit}. ${f.records.some((r) => r.raised_by.includes('hullproof-hunt')) ? 'Every record comes from a check, a scanner rule or a lead the engine confirmed with evidence it can re run; no model decides any record.' : 'Every record comes from a check or a scanner rule, with no model.'} Validate it with tools/hullproof/ci/validate-findings.mjs from the kit.`, '',
     '```hullproof-findings', json.trimEnd(), '```', '',
   ].join('\n');
 }

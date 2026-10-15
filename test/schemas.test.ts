@@ -15,7 +15,7 @@ const KIT_FINDINGS = process.env.HULLPROOF_KIT_FINDINGS_SCHEMA
 
 test('every schema file parses', () => {
   const names = readdirSync(DIR).filter((n) => n.endsWith('.schema.json'));
-  assert.deepEqual(names.sort(), ['check-results.schema.json', 'check.schema.json', 'codemap.schema.json', 'findings.schema.json', 'results.schema.json', 'scan-hits.schema.json', 'scan-meta.schema.json', 'stack.schema.json']);
+  assert.deepEqual(names.sort(), ['check-results.schema.json', 'check.schema.json', 'codemap.schema.json', 'findings.schema.json', 'hunt-output.schema.json', 'hunt-result.schema.json', 'results.schema.json', 'scan-hits.schema.json', 'scan-meta.schema.json', 'stack.schema.json']);
   for (const n of names) assert.doesNotThrow(() => load(n), n);
 });
 

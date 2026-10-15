@@ -6,6 +6,7 @@ import { evaluateGate, gateLines, loadKitGate, type GateOutcome, type OwnerFile 
 import { loadKit, resolveKitDir, type Kit } from '../report/kit.ts';
 import { loadScan, type ScanFolder } from '../report/load.ts';
 import { renderReport } from '../report/report.ts';
+import { mergeHunt, type Merged } from '../confirm/merge.ts';
 import { KIT_LOCAL, outDirFor } from './scan.ts';
 
 // The kit folder for report and gate: --kit, then HULLPROOF_KIT, then the kit the scan recorded in kit.local.json when
@@ -26,7 +27,8 @@ export interface ReadOptions { repo: string; out: string | null; kit: string | n
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-async function prepare(o: ReadOptions): Promise<{ s: ScanFolder; kit: Kit; gate: GateOutcome; repo: string } | string> {
+export type Prepared = { s: ScanFolder; kit: Kit; gate: GateOutcome; repo: string; merged: Merged | null };
+export async function prepare(o: ReadOptions): Promise<Prepared | string> {
   const repo = resolve(o.repo);
   const commit = o.commit ?? readHeadCommit(repo);
   if (!commit) return `no commit found in ${repo}; pass --commit`;
@@ -42,11 +44,15 @@ async function prepare(o: ReadOptions): Promise<{ s: ScanFolder; kit: Kit; gate:
     try { owner = JSON.parse(readFileSync(resolve(o.owner), 'utf8')) as OwnerFile; } catch (e) { return `cannot read the owner file: ${(e as Error).message}`; }
   }
   if (o.date && !/^\d{4}-\d{2}-\d{2}$/.test(o.date)) return '--date needs YYYY-MM-DD';
+  // Confirmed hunt findings and findings proven by a test, and only those, join the rows and the findings record. Leads, unproven specs
+  // and runs that were not provable here are never read here.
+  const merged = s.hunt.result || s.prove?.result ? mergeHunt(s, kit, s.hunt.result, s.prove?.result ?? null) : null;
+  if (merged) s = { ...s, results: merged.results, findings: merged.findings, findingsText: merged.findingsText };
   const gate = evaluateGate({
     kitGate: await loadKitGate(kitDir), controls: kit.controls, scope: { edition: s.info.edition, stage: s.info.stage, stageSource: s.info.stage_source },
     rows: s.results, findingsText: s.findingsText, metas: s.metas, owner, repo, commit, today: o.date ?? today(),
   });
-  return { s, kit, gate, repo };
+  return { s, kit, gate, repo, merged };
 }
 
 export async function report(o: ReadOptions): Promise<number> {
@@ -54,7 +60,7 @@ export async function report(o: ReadOptions): Promise<number> {
   const r = await prepare(o);
   if (typeof r === 'string') { log(`hullproof report: ${r}`); return 2; }
   const path = join(r.s.dir, 'report.md');
-  writeFileSync(path, renderReport(r.s, r.kit, r.gate));
+  writeFileSync(path, renderReport(r.s, r.kit, r.gate, r.merged));
   log(`hullproof report: wrote ${path}`);
   return 0;
 }

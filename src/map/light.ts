@@ -31,11 +31,15 @@ const OWNER_MORE: Record<MoreLang, RegExp> = {
   go: /UserID|OwnerID|userID|ownerID|TenantID|tenantID|AccountID|accountID|user_id|owner_id|tenant_id|team_id/,
   rb: /current_user|current_account|current_member/,
   php: /->user\b|\bAuth::(?:id|user)|auth\(\)->(?:id|user)|user_id|owner_id|tenant_id|team_id|account_id/,
+  java: /findBy\w*(?:Owner|User|Tenant|Account)\w*|\bgetOwner\w*\b|\bownerId\b|\bOwnerId\b/,
+  cs: /\bOwnerId\b|\bUserId\b|\bTenantId\b|\bAccountId\b/,
 };
 const ASSIGN: Record<MoreLang, RegExp> = {
   go: /^\s*(?:var\s+)?([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*(?::=|=)(?!=)\s*/,
   rb: /^\s*((?:@{0,2}[A-Za-z_]\w*)(?:\s*,\s*@{0,2}[A-Za-z_]\w*)*)\s*(?:\|\|=|=)(?![=~>])\s*/,
   php: /^\s*(\$[A-Za-z_]\w*(?:\s*,\s*\$[A-Za-z_]\w*)*|list\([^)]*\)|\[[^\]]*\])\s*(?:\.=|\?\?=|=)(?![=>])\s*/,
+  java: /^\s*(?:final\s+)?(?:[\w.]+(?:\s*<[^;=()]*>)?(?:\[\])*\s+)?([A-Za-z_]\w*)\s*=(?![=>])\s*/,
+  cs: /^\s*(?:await\s+)?(?:(?:var|[\w.]+(?:\s*<[^;=()]*>)?[?]?(?:\[\])*)\s+)?([A-Za-z_]\w*)\s*=(?![=>])\s*/,
 };
 const KEYWORDS = new Set(['nil', 'null', 'true', 'false', 'self', 'this', 'new', 'return', 'if', 'else', 'unless', 'do', 'end', 'func', 'var', 'string', 'int', 'bool', 'err', 'ok', 'ctx', 'then', 'and', 'or', 'not', 'array', 'isset', 'empty']);
 
@@ -53,7 +57,7 @@ export function statements(m: string, from: number, to: number, lang: MoreLang):
       if (c === '(' || c === '[') depth++;
       else if (c === ')' || c === ']') depth = Math.max(0, depth - 1);
       else if (c === ';' && depth === 0 && lang !== 'rb') { j++; break; }
-      else if ((c === '{' || c === '}') && depth === 0 && lang === 'php') { j++; break; }
+      else if ((c === '{' || c === '}') && depth === 0 && (lang === 'php' || lang === 'java' || lang === 'cs')) { j++; break; }
       else if (c === '\n' && depth === 0) {
         const prev = m.slice(i, j).trimEnd().slice(-1);
         const rest = m.slice(j + 1, j + 200);
@@ -174,8 +178,13 @@ function taintOf(prof: Profile, view: FileView, stmts: [number, number][], seeds
       const b = /\.(?:Decode|ShouldBindJSON|ShouldBindQuery|BindJSON|ShouldBind|Bind|BodyParser|QueryParser|ParamsParser|Unmarshal|BindQuery)\s*\(\s*(?:[^,()]*,\s*)?&?(\w+)/.exec(m);
       if (b) { names.add(b[1]); if (/validator|Validate|binding:/.test(view.text.slice(s, e))) validated.add(b[1]); }
     } else {
-      const f = prof.lang === 'php' ? /\bforeach\s*\(\s*(.+?)\s+as\s+(?:(\$\w+)\s*=>\s*)?(\$\w+)/.exec(m) : /([@\w.]+(?:\([^)]*\))?)\.each\s+do\s*\|\s*(\w+)/.exec(m);
-      if (f) recs.push({ lhs: prof.lang === 'php' ? [f[3]] : [f[2]], rhs: f[1], line: m });
+      if (prof.lang === 'java' || prof.lang === 'cs') {
+        const f = prof.lang === 'java' ? /\bfor\s*\(\s*(?:final\s+)?[\w.<>\[\],? ]+?\s+(\w+)\s*:\s*([^)]+)\)/.exec(m) : /\bforeach\s*\(\s*(?:var|[\w.<>\[\],?]+)\s+(\w+)\s+in\s+([^)]+)\)/.exec(m);
+        if (f) recs.push({ lhs: [f[1]], rhs: f[2], line: m });
+      } else {
+        const f = prof.lang === 'php' ? /\bforeach\s*\(\s*(.+?)\s+as\s+(?:(\$\w+)\s*=>\s*)?(\$\w+)/.exec(m) : /([@\w.]+(?:\([^)]*\))?)\.each\s+do\s*\|\s*(\w+)/.exec(m);
+        if (f) recs.push({ lhs: prof.lang === 'php' ? [f[3]] : [f[2]], rhs: f[1], line: m });
+      }
     }
   }
   for (let pass = 0; pass < 4; pass++) {
@@ -292,7 +301,7 @@ export function analyzeLight(view: FileView, spec: LightSpec): Analysis {
       const op: DataTouch['op'] = kw.startsWith('SELECT') ? 'read' : kw.startsWith('DELETE') ? 'delete' : 'write';
       const table = /\b(?:FROM|INTO|UPDATE|JOIN)\s+[`"]?([\w.]+)/i.exec(ts)?.[1] ?? null;
       const args = ts.replace(/(["'`])(?:\\.|(?!\1).)*\1/g, (q) => (SQL_WORD.test(q) || /WHERE|SET|VALUES|FROM/i.test(q) ? ' ' : q));
-      const interp = (prof.lang === 'go' && (/\bfmt\.Sprintf\s*\(/.test(ts) || /["`]\s*\+\s*\w/.test(ts))) || (prof.lang === 'rb' && /#\{/.test(ts)) || (prof.lang === 'php' && (/\$\w+/.test(ts.replace(/'[^']*'/g, '')) && /"[^"]*\$\w+|\.\s*\$/.test(ts))) || /["']\s*\.\s*\$|\+\s*[A-Za-z_]/.test(ts);
+      const interp = (prof.lang === 'go' && (/\bfmt\.Sprintf\s*\(/.test(ts) || /["`]\s*\+\s*\w/.test(ts))) || (prof.lang === 'rb' && /#\{/.test(ts)) || (prof.lang === 'php' && (/\$\w+/.test(ts.replace(/'[^']*'/g, '')) && /"[^"]*\$\w+|\.\s*\$/.test(ts))) || (prof.lang === 'cs' && /\$@?"[^"]*\{/.test(ts)) || (prof.lang === 'java' && /\.formatted\s*\(|String\s*\.\s*format\s*\(/.test(ts)) || /["']\s*\.\s*\$|\+\s*[A-Za-z_]/.test(ts);
       const reqDerived = taintedExpr(args) || (interp && taintedExpr(ts));
       const sets = op === 'write' && /\bSET\b/i.test(ts) ? [...new Set([...ts.matchAll(/\b([a-z_]+)\s*=\s*(?:\?|\$\d+|:\w+|%s|['"]?\s*[#{$]|["']\s*\+|\+)/gi)].map((x) => x[1].toLowerCase()).filter((x) => PRIVILEGED.test(x)))].sort() : [];
       const whereAt = ts.search(/\bWHERE\b/i);
@@ -327,7 +336,8 @@ export function analyzeLight(view: FileView, spec: LightSpec): Analysis {
           const close = open >= 0 ? closeOf(view.masked, open) : -1;
           const args = open >= 0 && close > 0 ? view.text.slice(open + 1, close - 1) : view.text.slice(s + m.index + m[0].length, e);
           const ruleTarget: string | null = rule.target !== null ? ((m[rule.target] as string | undefined) ?? null) : null;
-          const tgt: string | null = ruleTarget ?? (prof.lang === 'go' && rule.store === 'orm' ? goTarget(ts.slice(m.index), view.text) : null);
+          const tgt0: string | null = ruleTarget ?? (prof.lang === 'go' && rule.store === 'orm' ? goTarget(ts.slice(m.index), view.text) : null);
+          const tgt = tgt0 !== null && (prof.lang === 'java' || prof.lang === 'cs') ? tgt0.replace(/^_/, '').replace(/(?:Repository|Repo|Dao|DAO)$/, '') || tgt0 : tgt0;
           const reqDerived = taintedExpr(args) || (chain.length > 1 && taintedExpr(ts.slice(m.index)));
           const keyedVerb = /^(?:find|findOrFail|findMany|findOrNew|sole|findSole|destroy|FindOne|Get[A-Z]\w*|Show\w*|Load\w*)$/.test(verb);
           const createVerb = /^(?:create!?|insert\w*|Create|Save|forceCreate|build|new|insert_all|upsert\w*|updateOrCreate|firstOrCreate|firstOrNew|find_or_create_by|find_or_initialize_by)$/.test(verb);
@@ -365,7 +375,7 @@ export function analyzeLight(view: FileView, spec: LightSpec): Analysis {
         }
       }
       // Assignments of a privileged field from request data: $user->role = $request->role; user.Role = req.Role
-      const fa = prof.lang === 'php' ? /(\$\w+)\s*->\s*(\w+)\s*=\s*([^;]+)/.exec(ms) : prof.lang === 'rb' ? /(@?\w+)\.(\w+)\s*=\s*(.+)/.exec(ms) : /(\w+)\.(\w+)\s*=\s*(.+)/.exec(ms);
+      const fa = prof.lang === 'php' ? /(\$\w+)\s*->\s*(\w+)\s*=\s*([^;]+)/.exec(ms) : prof.lang === 'rb' ? /(@?\w+)\.(\w+)\s*=\s*(.+)/.exec(ms) : prof.lang === 'java' ? /(\w+)\.set([A-Z]\w*)\s*\(([^;]+)\)/.exec(ms) : /(\w+)\.(\w+)\s*=\s*(.+)/.exec(ms);
       if (fa && PRIVILEGED.test(snake(fa[2])) && taintedExpr(fa[3]) && !emitted.length) {
         const v = vars.get(fa[1]);
         emitted.push({ store: 'orm', op: 'write', target: v?.target ?? null, line: line(fa.index), by_id: v?.byId ?? false, limit_from_request: false, request_derived: true, owner_scoped: v?.owner ?? false, raw_sql: false, sets: [snake(fa[2])], mass_assign: false, confidence: 'medium' });

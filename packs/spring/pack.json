@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "id": "spring",
+  "name": "Java and Spring",
+  "summary": "Spring MVC controllers with method security annotations and the Spring Security filter chain: entry points, protections, taint rules and checks.",
+  "edition": "free",
+  "languages": [
+    "java"
+  ],
+  "frameworks": [
+    "spring",
+    "spring-boot"
+  ],
+  "level": "L2",
+  "limits": [
+    "Routes built in code (RouterFunction) and Kotlin Spring apps are not read. Planted flaws were not measured on a real application."
+  ],
+  "parts": {
+    "detectors": [
+      "java",
+      "spring",
+      "spring-boot"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/spring.ts"
+      },
+      {
+        "file": "src/map/cblocks.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/light-profiles.ts"
+      }
+    ],
+    "sources_sinks": [
+      {
+        "file": "rules/semgrep/taint-java.yaml"
+      }
+    ],
+    "rules": [
+      {
+        "file": "rules/semgrep/taint-java.yaml",
+        "tests": [
+          "test/fixtures/rules/taint-java.java"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      },
+      {
+        "id": "check.authz.owner-filter-on-id-read"
+      },
+      {
+        "id": "check.authz.admin-role-check"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/packs/spring/fail",
+    "fixed_dir": "test/fixtures/packs/spring/pass",
+    "internal": true,
+    "answer_keys": [
+      "outside_repo"
+    ],
+    "result": "packs/spring/fixture-result.json"
+  }
+}

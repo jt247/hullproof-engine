@@ -1,0 +1,88 @@
+{
+  "schema": 1,
+  "id": "dotnet",
+  "name": ".NET and ASP.NET Core",
+  "summary": "ASP.NET Core controllers and minimal APIs with [Authorize], [AllowAnonymous], RequireAuthorization and a fallback policy: entry points, protections and checks.",
+  "edition": "free",
+  "languages": [
+    "csharp"
+  ],
+  "frameworks": [
+    "aspnet-core"
+  ],
+  "level": "L2",
+  "limits": [
+    "Conventional routing (MapControllerRoute) is not read. Planted flaws were not measured on a real application."
+  ],
+  "parts": {
+    "detectors": [
+      "csharp",
+      "aspnet-core"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/dotnet.ts"
+      },
+      {
+        "file": "src/map/cblocks.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/light-profiles.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      },
+      {
+        "id": "check.authz.owner-filter-on-id-read"
+      },
+      {
+        "id": "check.authz.admin-role-check"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/packs/dotnet/fail",
+    "fixed_dir": "test/fixtures/packs/dotnet/pass",
+    "internal": true,
+    "answer_keys": [
+      "outside_repo"
+    ],
+    "result": "packs/dotnet/fixture-result.json"
+  }
+}

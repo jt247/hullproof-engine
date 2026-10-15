@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Notes</string>
+    <string name="maps_key">AIzaFixtureMapsKey0000000000000000000</string>
+    <string name="api_secret">fixture-api-secret-value-0000</string>
+</resources>

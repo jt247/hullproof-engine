@@ -1,0 +1,119 @@
+{
+  "detect": {
+    "expected": [
+      "django",
+      "fastapi",
+      "flask",
+      "python"
+    ],
+    "found": [
+      "django",
+      "django-auth",
+      "fastapi",
+      "flask",
+      "python",
+      "sqlite"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": false,
+      "flaws": {
+        "false_findings": 0,
+        "found": 27,
+        "planted": 27
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 27,
+        "extra": 0,
+        "matched": 27,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/map/fail and test/fixtures/map/pass",
+      "source": "node bench/packs-measure.ts python (key packs/python/answer-key.json)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 4,
+        "planted": 4
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 8,
+        "extra": 0,
+        "matched": 8,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/prove/flask-sqlite/vulnerable and test/fixtures/prove/flask-sqlite/fixed",
+      "source": "node bench/packs-measure.ts python (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 23,
+        "extra": 0,
+        "matched": 23,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "fastapi/full-stack-fastapi-template (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 25,
+        "extra": 0,
+        "matched": 25,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "healthchecks/healthchecks (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Measured on synthetic fixtures with a key kept in this repository. BenchmarkPython (Flask, 2463 routes) matched its decorator count in Phase 2, but no recall figure for planted flaws has been taken on a blind key yet.",
+    "Flask with SQLite: four planted authorization flaws and a fixed copy. The key was written before the first measurement.",
+    "Correction after the first measurement: the first flaw listed a second check by mistake (a copy of the delete flaw). Nothing else in the key changed.",
+    "First measurement on this fixture, before any engine change: 8 of 8 entry points, 3 of 4 flaws found, 6 findings on the fixed copy. The six were checks that did not see the decorators require_user and require_admin as a session read and a role check. The Python vocabulary now names require_* decorators; the fixed copy then gave 1 finding, a missing audit record on the admin route, which was a real gap in the fixture and was repaired in both copies. The measurement is therefore no longer blind for these two decorator names.",
+    "The read by id flaw is missed: check.authz.owner-filter-on-id-read does not find it in this layout (a Python SELECT with the id placeholder inside a function that is not in a file the check reads as a handler file).",
+    "2026-10-14: the first flaw also accepts check.map.read-by-id-without-owner, which was built in step 6c after these fixtures missed the flaw."
+  ],
+  "pack": "python",
+  "proof": [
+    {
+      "false_proofs_fixed": 0,
+      "identical": true,
+      "planted": 4,
+      "proven": 4,
+      "runs": 3,
+      "scope": "Flask with SQLite",
+      "source": "bench/results/phase6-flask-metrics-container.json (Colima, 3 rounds, fixture test/fixtures/prove/flask-sqlite)"
+    }
+  ],
+  "schema": 1
+}

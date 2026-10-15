@@ -1,0 +1,114 @@
+{
+  "detect": {
+    "expected": [
+      "express",
+      "javascript",
+      "nextjs",
+      "typescript"
+    ],
+    "found": [
+      "express",
+      "javascript",
+      "nextjs",
+      "typescript"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": false,
+      "flaws": {
+        "false_findings": 0,
+        "found": 25,
+        "planted": 25
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 26,
+        "extra": 0,
+        "matched": 26,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/map/fail and test/fixtures/map/pass",
+      "source": "node bench/packs-measure.ts node-ts (key packs/node-ts/answer-key.json)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 20,
+        "planted": 30
+      },
+      "kind": "demo",
+      "mapped": {
+        "expected": 27,
+        "extra": 0,
+        "matched": 27,
+        "what": "entry points"
+      },
+      "name": "hullproof-demo",
+      "source": "bench/PHASE2-MEASURED-2026-10-11.md sections 2.1 and 2.2 (open core rules, new checks as leads), key from the Pro repository, the whole demo app, which includes flaws in Supabase configuration, infrastructure files and CI as well as in application code, so this recall belongs to the engine on this app and not to this pack alone",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 21,
+        "extra": 0,
+        "matched": 21,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "mikro-orm/nestjs-realworld-example-app (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 6,
+        "extra": 0,
+        "matched": 6,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "vercel/commerce (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Entry points and flaws on the synthetic fixture come from a key kept in this repository, so that measurement is not blind. The blind measurement is the demo app, whose key lives in the Pro repository.",
+    "Express with SQLite is the only stack with a start recipe, measured on one fixture app. Next.js and NestJS entry points were measured on the demo and on Juice Shop only.",
+    "The NestJS fixture has no package.json, so NestJS detection is not exercised by it; its entry points are."
+  ],
+  "pack": "node-ts",
+  "proof": [
+    {
+      "false_proofs_fixed": 0,
+      "identical": true,
+      "planted": 4,
+      "proven": 4,
+      "runs": 3,
+      "scope": "Express with SQLite",
+      "source": "bench/PHASE4-MEASURED-2026-10-14.md (Colima, fixture test/fixtures/prove/express-sqlite)"
+    }
+  ],
+  "schema": 1
+}

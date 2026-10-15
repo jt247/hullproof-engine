@@ -11,6 +11,8 @@ export interface ScanOptions extends RunContext {
   asOf?: string;                // YYYY-MM-DD, the date OSV advisories are judged against. Default: today (UTC).
   policy?: DependencyPolicy;
   env?: NodeJS.ProcessEnv;      // base environment (tests use it to hide a tool from PATH)
+  skipFiles?: ReadonlySet<string>; // unchanged kit files in the project (src/discover/kit-files.ts): hits in them are dropped
+  targets?: string[];           // Semgrep only: read just these repository relative files (the pre-commit hook passes the staged files)
 }
 
 export interface SecretDetail {

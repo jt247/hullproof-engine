@@ -14,20 +14,24 @@ import { extractGoAll, goFiles } from './go.ts';
 import { extractLaravelAll, laravelFiles } from './laravel.ts';
 import { FnIndex } from './light-index.ts';
 import { extractRailsAll, railsFiles } from './rails.ts';
+import { extractSpring, springFiles } from './spring.ts';
+import { dotnetFiles, extractDotnet } from './dotnet.ts';
+import { extractMobile, mobileFacts } from './mobile.ts';
+import { cargoConfig, extractRust, rustFiles } from './rust.ts';
 import { authHelperCandidates } from './candidates.ts';
 import { extractPython } from './py.ts';
 import { extractDjango } from './py-django.ts';
 import { langOf, Repo } from './repo.ts';
 
 // Web frameworks a built extractor reads, and ones it does not, by language group (stack.json framework ids).
-const READ_BY: Record<string, string[]> = { 'node-ts': ['nextjs', 'express', 'fastify', 'koa', 'hono', 'nestjs', 'trpc', 'react', 'expo'], python: ['flask', 'fastapi', 'django', 'quart', 'sanic', 'starlette'], go: ['chi', 'echo', 'fiber', 'gin', 'gorilla-mux'], ruby: ['rails'], php: ['laravel'] };
+const READ_BY: Record<string, string[]> = { 'node-ts': ['nextjs', 'express', 'fastify', 'koa', 'hono', 'nestjs', 'trpc', 'react', 'expo'], python: ['flask', 'fastapi', 'django', 'quart', 'sanic', 'starlette'], go: ['chi', 'echo', 'fiber', 'gin', 'gorilla-mux'], ruby: ['rails'], php: ['laravel'], java: ['spring', 'spring-boot'], csharp: ['aspnet-core'] };
 const UNREAD: Record<string, string[]> = {
   'node-ts': ['adonisjs', 'apollo-server', 'hapi', 'loopback', 'remix', 'sveltekit', 'nuxt', 'astro', 'socket.io', 'graphql'],
   python: ['aiohttp', 'bottle', 'falcon', 'litestar', 'pyramid', 'tornado', 'gradio', 'streamlit'],
   go: [], ruby: ['sinatra', 'grape', 'hanami', 'roda'],
   php: ['symfony', 'slim', 'codeigniter', 'cakephp', 'yii', 'drupal', 'wordpress'],
-  java: ['spring', 'spring-boot', 'quarkus', 'micronaut', 'javalin', 'hibernate'], kotlin: ['ktor', 'spring', 'spring-boot'],
-  csharp: ['aspnet-core', 'entity-framework'], rust: ['actix-web', 'axum', 'rocket', 'warp'], elixir: ['phoenix', 'ecto'],
+  java: ['quarkus', 'micronaut', 'javalin'], kotlin: ['ktor', 'spring', 'spring-boot'],
+  csharp: [], rust: ['actix-web', 'axum', 'rocket', 'warp'], elixir: ['phoenix', 'ecto'],
   dart: ['dart-frog', 'shelf'], swift: ['vapor'],
 };
 const SERVER_LANGS = new Set(['java', 'kotlin', 'csharp', 'rust', 'scala', 'elixir', 'swift', 'dart', 'perl', 'c', 'cpp', 'lua', 'haskell', 'clojure', 'groovy', 'erlang', 'fsharp', 'ocaml', 'julia', 'r', 'visual-basic', 'zig', 'nim']);
@@ -84,6 +88,10 @@ export function buildCodeMap(ctx: CheckContext): CodeMap {
   if (goFiles(repo).length) guard('(go routes)', () => extractGoAll(repo, new FnIndex(repo, 'go'), repo.local));
   if (railsFiles(repo).routes.length) guard('(rails routes)', () => extractRailsAll(repo, new FnIndex(repo, 'rb'), repo.local));
   if (laravelFiles(repo).length) guard('(laravel routes)', () => extractLaravelAll(repo, new FnIndex(repo, 'php'), repo.local));
+  if (springFiles(repo).length) guard('(spring controllers)', () => extractSpring(repo, new FnIndex(repo, 'java'), repo.local));
+  if (dotnetFiles(repo).length) guard('(aspnet routes)', () => extractDotnet(repo, new FnIndex(repo, 'cs'), repo.local));
+  guard('(android and ios configuration)', () => extractMobile(repo));
+  if (rustFiles(repo).length) guard('(rust routes)', () => extractRust(repo));
   guard('(expo router)', () => extractExpo(repo));
 
   // Router mounts: routes registered in a mounted file live under the mount prefix and inherit its protections.
@@ -101,11 +109,13 @@ export function buildCodeMap(ctx: CheckContext): CodeMap {
   for (const ep of all.entries) {
     if (!WEB_KINDS.has(ep.kind) && ep.kind !== 'server_action' && ep.kind !== 'graphql_resolver' && ep.kind !== 'rpc') continue;
     for (const g of gates) {
+      if (g.framework === 'spring' || g.framework === 'aspnet') continue; // the extractor applied these rules itself, in order, first match wins
       if (g.framework === 'express' && (g.file !== ep.file || g.line > ep.line)) continue;
       if (g.framework === 'next-app' && !(ep.framework === 'next-app' || ep.framework === 'next-pages') || (g.framework === 'next-app' && ep.kind === 'server_action')) continue;
       if (g.framework === 'flask' && ep.framework !== 'flask' && ep.framework !== 'quart') continue;
       if (g.framework === 'nest' && ep.framework !== 'nest') continue;
       if (g.framework === 'django' && ep.framework !== 'django') continue;
+      if (g.methods.length && ep.method && ep.method !== 'ANY' && !g.methods.includes(ep.method)) continue;
       if (ep.path === null && !g.paths.includes('*')) continue;
       if (!g.paths.some((p) => ep.path === null ? p === '*' : inPrefix(ep.path!, p))) continue;
       const cap = g.paths.includes('*') || g.kind === 'guard' || g.kind === 'global_pipe' ? g.confidence : 'medium';
@@ -124,16 +134,17 @@ export function buildCodeMap(ctx: CheckContext): CodeMap {
   const entries = [...seen.values()].sort((a, b) => cmp(a.file, b.file) || a.line - b.line || cmp(a.method ?? '', b.method ?? '') || cmp(a.path ?? '', b.path ?? '') || cmp(a.name ?? '', b.name ?? '') || cmp(a.kind, b.kind));
 
   const by = (key: (e: EntryPoint) => string): Record<string, number> => { const o: Record<string, number> = {}; for (const e of entries) o[key(e)] = (o[key(e)] ?? 0) + 1; return Object.fromEntries(Object.entries(o).sort(([a], [b]) => cmp(a, b))); };
+  const facts = mobileFacts(repo);
   return {
     schema_version: '1.0.0', engine_version: ENGINE_VERSION, commit: ctx.stack.commit,
-    coverage: coverage(ctx, entries, failed), entry_points: entries,
+    coverage: coverage(ctx, entries, failed, facts, repo), entry_points: entries,
     gates: gates.map((g) => ({ ...g, protections: g.protections.slice().sort((a, b) => a.line - b.line || cmp(a.kind, b.kind) || cmp(a.via, b.via)) })),
-    config: { supabase: supabaseMap(repo), firebase: firebaseMap(repo), local_vocab: { auth_helpers: repo.local.auth_helpers, role_helpers: repo.local.role_helpers }, auth_helper_candidates: authHelperCandidates(repo, entries) },
+    config: { supabase: supabaseMap(repo), firebase: firebaseMap(repo), android: facts.android, ios: facts.ios, cargo: cargoConfig(repo), secrets: facts.secrets, local_vocab: { auth_helpers: repo.local.auth_helpers, role_helpers: repo.local.role_helpers }, auth_helper_candidates: authHelperCandidates(repo, entries) },
     counts: { entry_points: entries.length, by_kind: by((e) => e.kind), by_framework: by((e) => e.framework) },
   };
 }
 
-function coverage(ctx: CheckContext, entries: EntryPoint[], failed: { file: string; message: string }[]): Coverage[] {
+function coverage(ctx: CheckContext, entries: EntryPoint[], failed: { file: string; message: string }[], facts: ReturnType<typeof mobileFacts>, repo: Repo): Coverage[] {
   const frameworks = new Set([...ctx.stack.frameworks.map((f) => f.id), ...(ctx.stack.mobile ?? []).map((f) => f.id)]);
   const rows: Coverage[] = [];
   const nodeTotal = entries.filter((e) => /\.[cm]?[jt]sx?$/.test(e.file)).length;
@@ -160,6 +171,25 @@ function coverage(ctx: CheckContext, entries: EntryPoint[], failed: { file: stri
       if (l.id !== 'go' && !readSeen.length && n === 0 && !unread.length) { status = 'partial'; note = `No ${l.id === 'ruby' ? 'Rails' : 'Laravel'} project was found, so no routes were read. Web code in ${l.id} files is not in this map.`; }
       else if (readSeen.length && n === 0) note = 'A web framework was detected and no entry point was found. The routes may be registered in a way the extractor does not read.';
       rows.push({ language: l.id, files, extractor: name, status, entry_points: n, note });
+    } else if (l.id === 'java') {
+      const n = count(/\.java$/);
+      const unread = UNREAD.java.filter((f) => frameworks.has(f));
+      const springSeen = READ_BY.java.some((f) => frameworks.has(f));
+      rows.push({ language: 'java', files, extractor: 'spring', status: unread.length || !springSeen ? 'partial' : 'mapped', entry_points: n,
+        note: unread.length ? `Frameworks seen that this extractor does not read: ${unread.join(', ')}. Entry points they register may be missing.` : !springSeen ? 'No Spring project was found, so no routes were read. Web code in Java files is not in this map.' : n === 0 ? 'A web framework was detected and no entry point was found. The routes may be registered in a way the extractor does not read.' : 'Spring MVC controllers (@RestController, @Controller and the mapping annotations) are read, with method security annotations and the Spring Security filter chain rules.' });
+    } else if (l.id === 'csharp') {
+      const n = count(/\.cs$/);
+      const aspSeen = READ_BY.csharp.some((f) => frameworks.has(f));
+      rows.push({ language: 'csharp', files, extractor: 'aspnet', status: aspSeen ? 'mapped' : 'partial', entry_points: n,
+        note: !aspSeen ? 'No ASP.NET Core project was found, so no routes were read. Web code in C# files is not in this map.' : n === 0 ? 'A web framework was detected and no entry point was found. The routes may be registered in a way the extractor does not read.' : 'ASP.NET Core controllers ([Route] and the [HttpGet] family) and minimal APIs (MapGet and the others, with MapGroup) are read, with [Authorize], [AllowAnonymous], RequireAuthorization and a fallback policy.' });
+    } else if (l.id === 'kotlin' || l.id === 'swift' || l.id === 'rust') {
+      const fw = l.id === 'kotlin' ? 'android' : l.id === 'swift' ? 'ios' : 'axum|actix-web';
+      const n = entries.filter((e) => new RegExp(`^(?:${fw})$`).test(e.framework)).length;
+      const what = l.id === 'kotlin' ? 'AndroidManifest.xml (exported components and deep links) and the network security configuration' : l.id === 'swift' ? 'Info.plist (URL schemes, App Transport Security) and the entitlements (associated domains)' : 'Cargo.toml, and axum and actix web routes';
+      const read = l.id === 'rust' ? rustFiles(repo).length > 0 || (cargoConfig(repo)?.manifests.length ?? 0) > 0 : l.id === 'kotlin' ? (facts.android?.manifests.length ?? 0) > 0 : (facts.ios?.plists.length ?? 0) > 0;
+      rows.push(read
+        ? { language: l.id, files, extractor: l.id === 'kotlin' ? 'android' : l.id === 'swift' ? 'ios' : 'rust', status: 'partial', entry_points: n, note: `${what[0].toUpperCase()}${what.slice(1)} are read. ${l.id === 'rust' ? 'Handler bodies are not read.' : 'The source files are not read, so what a handler does with an incoming intent or URL is not in this map.'}` }
+        : { language: l.id, files, extractor: null, status: 'not_mapped', entry_points: 0, note: `No extractor input found for ${l.id}${(UNREAD[l.id] ?? []).filter((f) => frameworks.has(f)).length ? ` (frameworks seen: ${(UNREAD[l.id] ?? []).filter((f) => frameworks.has(f)).join(', ')})` : ''}. Entry points in ${l.id} files are not in this map.` });
     } else if (SERVER_LANGS.has(l.id)) {
       const seen = (UNREAD[l.id] ?? []).filter((f) => frameworks.has(f));
       rows.push({ language: l.id, files, extractor: null, status: 'not_mapped', entry_points: 0, note: `No extractor for ${l.id} yet${seen.length ? ` (frameworks seen: ${seen.join(', ')})` : ''}. Entry points in ${l.id} files are not in this map.` });

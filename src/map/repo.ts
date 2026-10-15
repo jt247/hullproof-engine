@@ -8,13 +8,18 @@ import { loadLocalVocab, type LocalVocab } from './local-vocab.ts';
 
 export const JS_EXT = /\.(?:[cm]?[jt]sx?)$/;
 export const PY_EXT = /\.py$/;
-export const langOf = (file: string): Lang | null => (JS_EXT.test(file) && !/\.d\.ts$/.test(file) ? 'js' : PY_EXT.test(file) ? 'py' : /\.go$/.test(file) ? 'go' : /\.rb$/.test(file) ? 'rb' : /\.php$/.test(file) ? 'php' : null);
+export const langOf = (file: string): Lang | null => (JS_EXT.test(file) && !/\.d\.ts$/.test(file) ? 'js' : PY_EXT.test(file) ? 'py' : /\.go$/.test(file) ? 'go' : /\.rb$/.test(file) ? 'rb' : /\.php$/.test(file) ? 'php' : /\.java$/.test(file) ? 'java' : /\.cs$/.test(file) ? 'cs' : /\.kts?$/.test(file) ? 'kt' : /\.swift$/.test(file) ? 'swift' : /\.rs$/.test(file) ? 'rs' : null);
 
 // The lines of a Go, Ruby or PHP file that name what it uses: import blocks, require lines, use statements.
-const IMPORTS_MORE: Record<'go' | 'rb' | 'php', RegExp> = {
+const IMPORTS_MORE: Record<Exclude<Lang, 'js' | 'py'>, RegExp> = {
   go: /^[ \t]*import\s*(?:\([\s\S]*?\)|(?:\w+\s+)?"[^"]*")/gm,
   rb: /^[ \t]*(?:require(?:_relative)?|gem|include|extend)\s[^\n]*/gm,
   php: /^[ \t]*(?:use|namespace)\s+[^;\n]*;/gm,
+  java: /^[ \t]*(?:import|package)\s+[^;\n]*;/gm,
+  cs: /^[ \t]*(?:global\s+)?(?:using|namespace)\s+[^;\n{]*[;{]?/gm,
+  kt: /^[ \t]*(?:import|package)\s+[^\n]*/gm,
+  swift: /^[ \t]*(?:@testable\s+)?import\s+[^\n]*/gm,
+  rs: /^[ \t]*(?:use|extern\s+crate|mod)\s+[^;\n]*;/gm,
 };
 
 // A file that is browser code or generated: no server entry points are looked for in it.
@@ -36,7 +41,7 @@ export class Repo {
       const text = this.ctx.text(file);
       if (text) {
         const masked = mask(text, lang);
-        const imports = lang === 'go' || lang === 'rb' || lang === 'php' ? (text.match(IMPORTS_MORE[lang]) ?? []).join('\n') : (text.match(/\bimport\s[^;]*?from\s+['"][^'"]+['"]|\bimport\s+['"][^'"]+['"]|\b(?:const|let|var)\s+[^=;\n]+=\s*require\(\s*['"][^'"]+['"]\s*\)|^[ \t]*(?:from\s+\S+\s+import\b[^\n]*|import\s+\S+[^\n]*)/gm) ?? []).join('\n');
+        const imports = lang !== 'js' && lang !== 'py' ? (text.match(IMPORTS_MORE[lang]) ?? []).join('\n') : (text.match(/\bimport\s[^;]*?from\s+['"][^'"]+['"]|\bimport\s+['"][^'"]+['"]|\b(?:const|let|var)\s+[^=;\n]+=\s*require\(\s*['"][^'"]+['"]\s*\)|^[ \t]*(?:from\s+\S+\s+import\b[^\n]*|import\s+\S+[^\n]*)/gm) ?? []).join('\n');
         v = { file, text, masked, lang, lines: new Lines(text), imports };
       }
     }
@@ -87,7 +92,7 @@ export class Repo {
     let idx = this.indexes.get(lang);
     if (idx) return idx;
     idx = new Map();
-    if (lang !== 'js' && lang !== 'py') { this.indexes.set(lang, idx); return idx; } // Go, Ruby and PHP keep their own indexes
+    if (lang !== 'js' && lang !== 'py') { this.indexes.set(lang, idx); return idx; } // the other languages keep their own indexes (light-index.ts)
     const put = (name: string, ref: HelperRef): void => { const l = idx!.get(name); if (l) l.push(ref); else idx!.set(name, [ref]); };
     for (const file of this.filesOf(lang)) {
       const v = this.view(file);

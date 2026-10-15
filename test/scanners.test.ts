@@ -18,6 +18,7 @@ import type { ScannerId } from '../src/types/index.ts';
 import { EXTRA_RULE_DIRS } from './helpers/packs.ts';
 import { loadTable } from '../src/mapping/map.ts';
 import { validate } from './helpers/schema.ts';
+import { NEEDS_PRO_KIT } from './helpers/kit.ts';
 
 const FIX = fileURLToPath(new URL('./fixtures/scanners/', import.meta.url));
 const SCHEMAS = fileURLToPath(new URL('../schemas/', import.meta.url));
@@ -118,7 +119,7 @@ test('gitleaks without history runs dir only', { skip: skipUnless('gitleaks') },
   assert.ok(s.detail.hits.every((h) => h.secret?.source === 'dir'));
 });
 
-test('trivy: config scan maps cloud checks and keeps unmapped ones', { skip: skipUnless('trivy') }, () => {
+test('trivy: config scan maps cloud checks and keeps unmapped ones', { skip: skipUnless('trivy') || NEEDS_PRO_KIT }, () => {
   const s = result('trivy');
   assert.equal(s.meta.status, 'ran');
   const find = (id: string, file: string) => s.detail.hits.find((h) => h.rule_id === id && h.file === file);

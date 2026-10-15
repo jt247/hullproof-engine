@@ -1,0 +1,84 @@
+{
+  "pack": "rails",
+  "fail_dir": "test/fixtures/map-more/fail",
+  "pass_dir": "test/fixtures/map-more/pass",
+  "stacks": [
+    "rails"
+  ],
+  "detect_expected": [
+    "rails",
+    "ruby"
+  ],
+  "mapped_what": "entry points",
+  "mapped": [
+    "http_route DELETE /notes/:id",
+    "http_route GET /api/export",
+    "http_route GET /api/items",
+    "http_route POST /admin/users/:id/role",
+    "http_route POST /api/import",
+    "http_route POST /api/upload",
+    "http_route POST /login",
+    "http_route POST /notes",
+    "webhook POST /webhooks/pay"
+  ],
+  "flaws": [
+    {
+      "check": "admin-route-without-role",
+      "stack": "rails"
+    },
+    {
+      "check": "data-read-without-auth",
+      "stack": "rails"
+    },
+    {
+      "check": "mutating-route-without-auth",
+      "stack": "rails"
+    },
+    {
+      "check": "privileged-action-without-audit",
+      "stack": "rails"
+    },
+    {
+      "check": "privileged-field-from-request",
+      "stack": "rails"
+    },
+    {
+      "check": "redirect-from-request",
+      "stack": "rails"
+    },
+    {
+      "check": "request-url-fetched",
+      "stack": "rails"
+    },
+    {
+      "check": "webhook-verify-before-use",
+      "stack": "rails"
+    },
+    {
+      "check": "write-by-id-without-owner",
+      "stack": "rails"
+    }
+  ],
+  "notes": [
+    "Synthetic fixture only. No real Rails application has been measured."
+  ],
+  "recorded": [
+    {
+      "name": "lobsters/lobsters (seeded sample of its route registrations)",
+      "kind": "third_party",
+      "blind_key": true,
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "mapped": {
+        "what": "entry points (real route registrations)",
+        "expected": 25,
+        "matched": 25,
+        "extra": 0
+      },
+      "flaws": null,
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    }
+  ]
+}

@@ -73,7 +73,7 @@ const PRO: Record<string, string[]> = {
 const MATRIX = PRO_MAP_CHECKS.length > 0 ? { ...OPEN, ...PRO } : OPEN;
 
 test('each map check flags the fail copy of the second wave stacks it applies to, and nothing in the pass copy', () => {
-  const checks = loadChecks().filter((c) => c.id.startsWith('check.map.') && !/supabase|firebase/.test(c.id));
+  const checks = loadChecks().filter((c) => c.id.startsWith('check.map.') && !/supabase|firebase|android|ios-|cargo-|mobile-|read-by-id-/.test(c.id));
   assert.deepEqual(checks.map((c) => c.id.slice('check.map.'.length)).sort(), Object.keys(MATRIX).sort());
   const run = (side: string) => { const dir = join(MORE, side); return runChecks(makeContext(dir, discover(dir), [], null), checks); };
   const fail = run('fail');

@@ -1,0 +1,43 @@
+{
+  "detect": {
+    "expected": [
+      "firebase-realtime-database",
+      "firestore"
+    ],
+    "found": [
+      "firebase-realtime-database",
+      "firestore"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": false,
+      "flaws": {
+        "false_findings": 0,
+        "found": 1,
+        "planted": 1
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 3,
+        "extra": 0,
+        "matched": 3,
+        "what": "rules"
+      },
+      "name": "test/fixtures/map/fail and test/fixtures/map/pass",
+      "source": "node bench/packs-measure.ts firebase (key packs/firebase/answer-key.json)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Synthetic fixture with a key kept in this repository. No blind measurement yet, so Firebase stays at L2. Hosted, so never L4."
+  ],
+  "pack": "firebase",
+  "proof": [],
+  "schema": 1
+}

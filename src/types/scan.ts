@@ -13,6 +13,7 @@ export interface Hit {
   sec_ids: string[];            // requirement IDs from the rule metadata or engine/maps/<tool>.json; [] means unmapped
   severity_hint: string | null; // the tool's own severity word, kept for the report; never used by the gate
   message_key: string;          // key into the engine's plain English text, normally `${tool}:${rule_id}`
+  noise?: string;               // secret hits only: why the value is an example, not a live secret (src/scanners/secret-noise.ts); absent when it must hold
 }
 
 // scan/<tool>.json

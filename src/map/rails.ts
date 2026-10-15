@@ -252,7 +252,15 @@ export function extractRailsAll(repo: Repo, fn: FnIndex, local: LocalVocab | nul
           active.push(fl);
         }
       }
-      const decorators: LightDeco[] = active.map((fl) => ({ view: fl.view, start: fl.start, end: fl.end, scope: 'router' as const }));
+      // A filter named authenticate_user may only look the user up (@user = ...) and let a guest through, as in Lobsters. It protects nothing then.
+      const softLookup = (fl: Filter): boolean => {
+        if (!/^authenticate_(?:user|member|account)$/.test(fl.name)) return false;
+        const d = fn.defs(fl.name).find((x) => chain.some((c) => c.file === x.view.file) || concerns.size > 0);
+        if (!d) return false;
+        const body = d.view.masked.slice(d.start, d.end);
+        return /@(?:user|current_user)\s*(?:\|\|)?=/.test(body) && !/\b(?:redirect_to|redirect_back|render|head|raise|halt|deny_access|forbidden|unauthorized)\b|\bauthenticate!?\b(?!_user)|\brequire_\w+/.test(body);
+      };
+      const decorators: LightDeco[] = active.filter((fl) => !softLookup(fl)).map((fl) => ({ view: fl.view, start: fl.start, end: fl.end, scope: 'router' as const }));
       const policyScoped = active.some((fl) => /load_and_authorize_resource|authorize_resource/.test(fl.name));
       // The action itself.
       let hv: FileView = rv;

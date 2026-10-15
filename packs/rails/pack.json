@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "id": "rails",
+  "name": "Ruby on Rails",
+  "summary": "config/routes.rb joined to controller actions and their before_action filters, with checks.",
+  "edition": "free",
+  "languages": [
+    "ruby"
+  ],
+  "frameworks": [
+    "rails"
+  ],
+  "level": "L2",
+  "limits": [
+    "Planted flaws were not measured on a real application. A filter that only looks a user up is told apart from one that blocks a guest by reading its body, which other shapes of filter may defeat."
+  ],
+  "parts": {
+    "detectors": [
+      "ruby",
+      "rails"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/rails.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/light-profiles.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map-more/fail",
+    "fixed_dir": "test/fixtures/map-more/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/rails/fixture-result.json"
+  }
+}

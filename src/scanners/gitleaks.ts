@@ -3,7 +3,9 @@
 // --redact, --ignore-gitleaks-allow and an empty ignore folder, so the scanned repository cannot hide its own findings.
 // Kept per hit: rule id, file, line, the redacted match (masked again) and the Gitleaks fingerprint. Never the secret,
 // the entropy, the author or the date.
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { secretNoise } from './secret-noise.ts';
 import { sortUnique } from '../util.ts';
 import { fileSha256, mask, relPath } from './common.ts';
 import { inEdition, loadControls } from '../mapping/controls.ts';
@@ -42,8 +44,10 @@ export const adapter: Adapter = {
       return r;
     };
     const dir = runOne('dir');
-    const scanned = sortUnique([...dir.stderr.matchAll(/scanning path path=(.+)$/gm)].map((m) => relPath(m[1].trim(), o.repo)));
-    const hits = parseGitleaks(dir.stdout, o, 'dir', env.tracked, ruleVersion).hits;
+    // The engine's own output folder is left out: it is written by this tool, so reading it would change the next run.
+    const own = (f: string): boolean => f === '.hullproof' || f.startsWith('.hullproof/');
+    const scanned = sortUnique([...dir.stderr.matchAll(/scanning path path=(.+)$/gm)].map((m) => relPath(m[1].trim(), o.repo))).filter((f) => !own(f));
+    const hits = parseGitleaks(dir.stdout, o, 'dir', env.tracked, ruleVersion).hits.filter((h) => !own(h.file));
     const commands = [show(dir.argv)];
     if (o.history) {
       const git = runOne('git');
@@ -57,15 +61,24 @@ export const adapter: Adapter = {
 export function parseGitleaks(stdout: string, o: ScanOptions, source: 'dir' | 'git', tracked: Set<string> | null, ruleVersion: string): { hits: DetailHit[] } {
   const controls = loadControls(o.controlsPath);
   const list = (stdout.trim() ? JSON.parse(stdout) : []) as Finding[];
+  // The source line is the only place a placeholder can be told from a key, because the scanner redacts the value. History hits
+  // cannot be matched to the checked out files, so they get the path rules only.
+  const lines = new Map<string, string[] | null>();
+  const lineOf = (file: string, n: number): string | null => {
+    if (source === 'git') return null;
+    if (!lines.has(file)) { try { lines.set(file, readFileSync(join(o.repo, file), 'utf8').split('\n')); } catch { lines.set(file, null); } }
+    return lines.get(file)?.[n - 1] ?? null;
+  };
   return {
     hits: list.map((f): DetailHit => {
       const file = relPath(f.File, o.repo);
       const isTracked = source === 'git' || !tracked || tracked.has(file);
       const m = mapHit({ tool: 'gitleaks', rule_id: f.RuleID, file, tracked: isTracked }, o.edition, controls);
       const redacted = mask(f.Match);
+      const noise = secretNoise(f.RuleID, file, lineOf(file, f.StartLine));
       return {
         tool: 'gitleaks', rule_id: f.RuleID, file, line: f.StartLine, end_line: f.EndLine, sec_ids: m.sec_ids, severity_hint: null,
-        message_key: `gitleaks:${f.RuleID}`, rule_version: ruleVersion, evidence: redacted, mapped_by: m.mapped_by, unmapped: !m.sec_ids.length,
+        ...(noise ? { noise } : {}), message_key: `gitleaks:${f.RuleID}`, rule_version: ruleVersion, evidence: redacted, mapped_by: m.mapped_by, unmapped: !m.sec_ids.length,
         secret: { redacted, fingerprint: relFingerprint(f.Fingerprint, o.repo), source, commit: f.Commit || null, tracked: isTracked },
       };
     }),

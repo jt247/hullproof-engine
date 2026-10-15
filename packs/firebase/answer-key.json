@@ -1,0 +1,27 @@
+{
+  "pack": "firebase",
+  "fail_dir": "test/fixtures/map/fail",
+  "pass_dir": "test/fixtures/map/pass",
+  "stacks": [
+    "firebase"
+  ],
+  "detect_expected": [
+    "firestore",
+    "firebase-realtime-database"
+  ],
+  "mapped_what": "rules",
+  "mapped": [
+    "rule firestore /databases/{database}/documents/users/{userId}/notes/{noteId} read,write",
+    "rule realtime /users/$uid read",
+    "rule realtime /users/$uid write"
+  ],
+  "flaws": [
+    {
+      "check": "firebase-auth-only-rule",
+      "stack": "firebase"
+    }
+  ],
+  "notes": [
+    "Synthetic fixture with a key kept in this repository. No blind measurement yet, so Firebase stays at L2. Hosted, so never L4."
+  ]
+}

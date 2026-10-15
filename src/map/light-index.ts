@@ -2,7 +2,7 @@
 // can be followed to its definition and one hop into the helpers it calls. Built once per language and repository.
 import { cmp } from '../util.ts';
 import type { HelperRef } from './analyze.ts';
-import { closeOf } from './lex.ts';
+import { closeOf, statementEnd } from './lex.ts';
 import type { MoreLang } from './lex-more.ts';
 import type { Repo } from './repo.ts';
 
@@ -65,6 +65,29 @@ export function phpFunc(masked: string, at: number): { start: number; end: numbe
   return e < 0 ? null : { start: at, end: e, bodyStart, params };
 }
 
+// A Java or C# method whose name starts at `at`: the parameters, then a block body, or in C# an expression body after "=>". An abstract or
+// interface method (ending in ";") has no body and gives null.
+export function cMethod(masked: string, at: number): { start: number; end: number; bodyStart: number; params: string } | null {
+  let i = at;
+  while (/[\w$]/.test(masked[i] ?? '')) i++;
+  while (/\s/.test(masked[i] ?? '')) i++;
+  if (masked[i] === '<') { let d = 0; for (; i < masked.length; i++) { if (masked[i] === '<') d++; else if (masked[i] === '>' && --d === 0) { i++; break; } else if (masked[i] === '\n' && d > 4) return null; } while (/\s/.test(masked[i] ?? '')) i++; }
+  if (masked[i] !== '(') return null;
+  const pc = closeOf(masked, i);
+  if (pc < 0) return null;
+  const params = masked.slice(i + 1, pc - 1);
+  for (let j = pc; j < masked.length; j++) {
+    const c = masked[j];
+    if (c === '{') { const e = closeOf(masked, j); return e < 0 ? null : { start: at, end: e, bodyStart: j, params }; }
+    if (c === ';') return null;
+    if (c === '=' && masked[j + 1] === '>') return { start: at, end: statementEnd(masked, j + 2), bodyStart: j + 2, params };
+  }
+  return null;
+}
+
+// Method declarations: at least one modifier, a type, a name and "(".
+export const C_METHOD = /^[ \t]*(?:@\w+(?:\([^)\n]*\))?[ \t]*)*(?:(?:public|protected|private|internal|static|final|abstract|synchronized|async|override|virtual|sealed|partial|new|extern|unsafe|default)\s+)+[^;{}()=\n]*?\s(\w+)\s*(?:<[^>\n]*>)?\s*\(/gm;
+
 export class FnIndex {
   private idx = new Map<string, HelperRef[]>();
   readonly repo: Repo;
@@ -86,6 +109,11 @@ export class FnIndex {
         for (const x of m.matchAll(/^[ \t]*def\s+(?:self\.)?(\w+[?!=]?)/gm)) {
           const d = rubyDef(m, x.index! + x[0].indexOf('def'));
           put(x[1], { view: v, start: d.start, end: d.end });
+        }
+      } else if (lang === 'java' || lang === 'cs') {
+        for (const x of m.matchAll(C_METHOD)) {
+          const f = cMethod(m, x.index! + x[0].lastIndexOf(x[1]));
+          if (f) put(x[1], { view: v, start: f.start, end: f.end });
         }
       } else {
         for (const x of m.matchAll(/\bfunction\s+&?\s*(\w+)\s*\(/g)) {

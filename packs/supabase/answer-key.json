@@ -1,0 +1,52 @@
+{
+  "pack": "supabase",
+  "fail_dir": "test/fixtures/map/fail",
+  "pass_dir": "test/fixtures/map/pass",
+  "stacks": [
+    "supabase"
+  ],
+  "detect_expected": [
+    "supabase"
+  ],
+  "mapped_what": "tables",
+  "mapped": [
+    "table docs rls=true policies=2 grants=0",
+    "table notes rls=null policies=0 grants=1",
+    "table profiles rls=true policies=1 grants=1"
+  ],
+  "flaws": [
+    {
+      "check": "supabase-open-table",
+      "stack": "supabase"
+    },
+    {
+      "check": "supabase-privileged-column-grant",
+      "stack": "supabase"
+    },
+    {
+      "check": "supabase-policy-trusts-claims",
+      "stack": "supabase"
+    }
+  ],
+  "recorded": [
+    {
+      "name": "hullproof-demo (whole app)",
+      "kind": "demo",
+      "blind_key": true,
+      "source": "bench/PHASE2-MEASURED-2026-10-11.md sections 2.1 and 2.2 (open core rules, new checks as leads), key from the Pro repository, the whole demo app, which includes flaws in Supabase configuration, infrastructure files and CI as well as in application code, so this recall belongs to the engine on this app and not to this pack alone",
+      "mapped": null,
+      "flaws": {
+        "planted": 30,
+        "found": 20,
+        "false_findings": 0
+      },
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    }
+  ],
+  "notes": [
+    "The blind measurement is the whole demo app (a Next.js app on Supabase), see the measurement source. Hosted, so never L4."
+  ]
+}

@@ -22,6 +22,8 @@ const EXPO_SESSION: { re: RegExp; via: string; conf: 'high' | 'medium' }[] = [
 ];
 const GUARD_REDIRECT = /<Redirect\b[^>]*\bhref\b|\brouter\.(?:replace|push|navigate)\s*\(|\bnavigation\.(?:replace|navigate|reset)\s*\(|\bProtected\b[^>]*\bguard\s*=|\bredirect\s*\(/;
 const GUARD_CONDITION = /\bif\s*\(\s*!\s*\(?\s*\w*(?:session|user|token|signedIn|isSignedIn|isAuthenticated|isLoggedIn|authenticated|auth)\w*|\bguard\s*=\s*\{|[?&]{2}\s*<Redirect|:\s*<Redirect/i;
+// The status compared with a string, as in if (status === 'signOut'): the string is blank in the masked copy, so this reads the text.
+const GUARD_STATUS = /\bif\s*\([^)]*['"](?:signOut|signedOut|unauthenticated|loggedOut|logged_out|anonymous|guest)['"]/i;
 const PUBLIC_GROUP = /\((?:auth|public|login|sign-?in|sign-?up|onboarding|welcome|landing|guest|unauth\w*)\)/i;
 
 function roots(repo: Repo): string[] {
@@ -43,7 +45,7 @@ function layoutGuard(v: FileView): { line: number; enforced: boolean | null } | 
   const session = EXPO_SESSION.some((s) => s.re.test(v.masked));
   const redirect = GUARD_REDIRECT.exec(v.masked);
   if (!session || !redirect) return null;
-  const cond = GUARD_CONDITION.test(v.masked);
+  const cond = GUARD_CONDITION.test(v.masked) || GUARD_STATUS.test(v.text);
   if (!cond && !/\bProtected\b/.test(v.masked)) return null;
   return { line: v.lines.at(redirect.index), enforced: cond ? true : null };
 }
@@ -80,12 +82,13 @@ export function extractExpo(repo: Repo): Extracted {
           continue;
         }
         // A screen: the file under app/ with a default export that is not a layout.
-        if (!/\bexport\s+default\b/.test(v.masked)) continue;
+        const DEFAULT_EXPORT = /\bexport\s+default\b|\bexport\s*\{[^}]*(?:\bas\s+default|\bdefault\b)[^}]*\}/;
+        if (!DEFAULT_EXPORT.test(v.masked)) continue;
         const path = routePath(rel);
         const seeds = ['params', 'searchParams'];
         for (const m of v.masked.matchAll(/\b(?:const|let)\s+(\{[^}]*\}|\w+)\s*=\s*use(?:Local|Global)?SearchParams\b/g)) seeds.push(...[...m[1].matchAll(/\w+/g)].map((x) => x[0]));
         const dm = /\bexport\s+default\s+(?:async\s+)?function\s+(\w+)/.exec(v.masked);
-        const ep = makeEntry(repo, { kind: 'page', framework: 'expo-router', file: f, line: v.lines.at(dm?.index ?? v.masked.search(/\bexport\s+default\b/)), method: null, path, name: dm?.[1] ?? null, confidence: 'high', handlerView: v, spec: { start: 0, end: v.text.length, seeds, returnsJson: false }, tags: ['mobile_screen'] });
+        const ep = makeEntry(repo, { kind: 'page', framework: 'expo-router', file: f, line: v.lines.at(dm?.index ?? Math.max(0, v.masked.search(DEFAULT_EXPORT))), method: null, path, name: dm?.[1] ?? null, confidence: 'high', handlerView: v, spec: { start: 0, end: v.text.length, seeds, returnsJson: false }, tags: ['mobile_screen'] });
         const extra: Protection[] = [];
         for (const s of EXPO_SESSION) {
           const m = s.re.exec(v.masked);

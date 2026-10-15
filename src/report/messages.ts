@@ -153,6 +153,20 @@ const CHECKS: Record<string, Message> = {
     fix: 'Accept only relative paths that start with a single slash, or compare the full address with an allowlist, and fall back to a fixed page otherwise.',
     confirm: 'Pass https://example.org as the redirect value and confirm the app ignores it, then rerun hullproof scan.',
   },
+  'check.map.mobile-secret-in-config': {
+    title: 'Secret written into a mobile configuration file',
+    root: 'mobile: a secret value sits in a file that ships inside the app',
+    impact: 'Anyone can unpack the app and read the file. A secret in it is public from the day the app is released.',
+    fix: 'Remove the value from the file. Keep the secret on your server and have the app ask the server, or fetch a short lived token at run time, then rotate the value that was shipped.',
+    confirm: 'Unpack the built app, search for the name, and confirm no value is stored, then rerun hullproof scan.',
+  },
+  'check.map.read-by-id-without-owner': {
+    title: 'A signed in user can read another user\'s record by id',
+    root: 'authorization: record read by an id from the request with no owner condition',
+    impact: 'Any signed in user can change the id in the request and read records that belong to other users.',
+    fix: 'Add the owner to the query (where id equals the request id and owner equals the signed in user) or check ownership after the read and answer not found when it does not match.',
+    confirm: 'Sign in as user A, request a record that belongs to user B by its id, confirm you get not found, then rerun hullproof scan.',
+  },
   'check.map.supabase-open-table': {
     title: 'Table is open to the public key through a grant or an always true policy',
     root: 'database: table readable or writable without signing in',

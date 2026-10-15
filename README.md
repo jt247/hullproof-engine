@@ -12,7 +12,9 @@ It is not a general purpose scanner, and it does not wrap a language model. No m
 4. Map every result to a Hullproof requirement ID, using the requirements in the Hullproof Free kit.
 5. Write a report in plain English and a release gate result. A requirement that nothing settled is listed as NOT ASSESSED with what would settle it. It is never reported as a pass.
 
-The engine is open under the Apache License 2.0. Release 0.4.0 comes as a zip on the GitHub releases page of this repository.
+The engine is open under the Apache License 2.0. Release 0.5.0 comes as a zip on the GitHub releases page of this repository.
+
+**The one stop for everything is the Hullproof Free repository, https://github.com/jt247/hullproof-free.** It holds this engine in its `engine/` folder, the kit in `kit/`, the upload pack in `pack/`, setup instructions written for an AI tool (`AI-SETUP.md`) and the Free zip. Clone that one repository and you have everything. This repository holds only the engine.
 
 ## Requirements
 
@@ -23,17 +25,16 @@ The engine is open under the Apache License 2.0. Release 0.4.0 comes as a zip on
 
 ## Quick start
 
-Get the engine and the Free kit in two separate folders, outside the project you want to check. Clone them, or unzip the release zips.
+Get the engine and the Free kit outside the project you want to check. The simplest way is the Free repository, which holds both:
 
 ```
-git clone https://github.com/jt247/hullproof-engine.git
 git clone https://github.com/jt247/hullproof-free.git
 ```
 
 Then, from the root of your project:
 
 ```
-ENGINE=/path/to/hullproof-engine
+ENGINE=/path/to/hullproof-free/engine
 KIT=/path/to/hullproof-free/kit
 
 node $ENGINE/src/cli.ts discover .
@@ -42,6 +43,10 @@ node $ENGINE/src/cli.ts scan . --kit $KIT --edition free --rule-pack $KIT/tools/
 node $ENGINE/src/cli.ts report .
 node $ENGINE/src/cli.ts gate .
 ```
+
+Or in one step, which also writes the SARIF file and a pull request comment (see CI below): `node $ENGINE/src/cli.ts ci . --kit $KIT --edition free`.
+
+If you cloned this repository on its own, set `ENGINE` to it and clone `hullproof-free` beside it for the kit.
 
 What each command does:
 
@@ -55,7 +60,7 @@ What each command does:
 
 A scan of files alone ends NOT READY on every project. Most BLOCKER and CRITICAL requirements are settled by evidence that is not in the code, such as a provider dashboard export or a test against the running app. The gate section below says how that evidence is supplied.
 
-You can also copy the kit into your project, the way the Free kit's own install does (`cp -Rn path/to/hullproof-free/kit/. .`). The engine then finds it without `--kit`. It also scans the kit's own files as part of your project, which adds findings from the kit's test samples, so keeping the kit in a separate folder gives a cleaner report.
+You can also copy the kit into your project, the way the Free kit's own install does (`cp -Rn path/to/hullproof-free/kit/. .`). The engine then finds it without `--kit`. Kit files in your project that are still byte for byte what the kit's manifest says are left out of the scan, because they hold planted test samples; the list is taken from the kit given with `--kit` (or `HULLPROOF_KIT`), never from a manifest inside the scanned project, and a file you changed is scanned. The scan log says how many files were left out. If the engine finds the kit only inside the project itself, it leaves nothing out, and keeping the kit in a separate folder gives a cleaner report.
 
 ## How the engine finds the kit
 
@@ -105,12 +110,60 @@ The extractors are TypeScript written for this engine (no parser library, no run
 4. Ruby on Rails: `config/routes.rb` (resources, namespaces, scopes, member and collection routes, devise's `authenticate` blocks, mounted engines) joined to the controller actions, with the `before_action` filters each action runs, inherited from parent controllers and included concerns, minus `skip_before_action`.
 5. PHP and Laravel: `routes/*.php` (verbs, `match`, resources, groups, prefixes, `controller()` groups, closures and invokable controllers) joined to the controller methods, with route, group and controller middleware, policies, form requests and the api throttle group.
 6. Expo and React Native: Expo Router screens and API routes, the deep links in `app.json` and `app.config`, deep links handled with `Linking`, and the sign in guards in the layouts above each screen. A layout guard is a client side redirect and says so in the map; it is not a server check.
+7. Java and Spring: `@RestController` and `@Controller` classes with `@RequestMapping` and the verb mappings, joined to `@PreAuthorize`, `@Secured` and `@RolesAllowed` (counted as enforced only when `@EnableMethodSecurity` or `@EnableGlobalMethodSecurity` is in the project), the Spring Security filter chain rules (`authorizeHttpRequests` and `authorizeRequests`, first matching rule wins), the sign in default of the security starter, and what the handler body does.
+8. C# and ASP.NET Core: controllers (`[Route]`, the `[HttpGet]` family, `[controller]` tokens) and minimal APIs (`MapGet` and the others, `MapGroup`), with `[Authorize]` (roles and policies), `[AllowAnonymous]`, `RequireAuthorization` and a fallback policy.
+9. Kotlin and Android, Swift and iOS: the configuration files, not the source. `AndroidManifest.xml` (exported activities, services, receivers and providers, their permissions, deep links, the debuggable, backup and cleartext flags), the network security configuration, `Info.plist` (App Transport Security, URL schemes), the entitlements (associated domains) and secrets written into these files and into `strings.xml`. Exported components and deep links are entry points (kind `ipc` and `deep_link`). What a handler does with an incoming intent or URL is not read.
+10. Rust: `Cargo.toml` (dependency sources, release profile, lockfile) and the routes of axum (`Router::new()` chains with `route`, `nest`, `merge`, `layer` and `route_layer`) and actix web (the attribute macros), with the layers and extractor types that protect them. Handler bodies are not read.
 
 Names the vocabulary does not know: a project can list its own sign in and role helpers in `.hullproof/kit.local.json` (`{"auth_helpers": ["requireMember"], "role_helpers": ["isBillingAdmin"]}`). A call, decorator, filter or middleware with one of those names counts as a session read or a role check with medium confidence, in every language above. `codemap.json` copies the names it used, and it lists the names that look like sign in helpers and were not recognised (`config.auth_helper_candidates`) so you know what to add.
 
 The checks that read the map are named `check.map.*`. They decide requirements a file can settle, for example that every route that changes data has a session read, that every webhook checks its signature before it uses the event, that every admin route has a role check, and that no update by id leaves out the owner. They start as leads: the report lists them with their evidence under the leads, and they never fail a requirement or hold the gate until `rules/tiers.json` records a measured precision of 0.80 or better for them. A tier entry can also carry `needs_judged`, a number of judged findings it must reach first, and the report then says how many it has and how many it needs.
 
 The report has a section "Entry points and what protects them" with the coverage table and one row per entry point.
+
+## Stack coverage
+
+The engine does not cover every stack equally, and the report and this table say how deep it goes for each one. Every stack gets level L0. The other levels are earned: a pack declares a level, and the engine refuses to list a pack whose recorded result on its fixture app does not support that level (`hullproof pack validate`). The table below is generated from the packs and their recorded results, not typed by hand. A test keeps it equal to the generator output.
+
+<!-- pack-coverage:start -->
+| Level | What it means |
+|---|---|
+| L0 Generic | Secrets, dependencies, infrastructure and cloud configuration, and the generic rules. Runs on any stack. |
+| L1 Detected | The stack is recognised and its configuration files are checked. |
+| L2 Mapped | Entry points and what protects them are written to the code map. |
+| L3 Checked | Executable checks and stack rules, measured on a fixture with a blind answer key. |
+| L4 Provable | A start recipe, so the proof sandbox can run the app and prove a flaw. |
+
+| Stack | Level | Higher level for | Measured on | Not covered |
+|---|---|---|---|---|
+| Node and TypeScript | L3 Checked | L4 for Express with SQLite | flaws on a demo app, counted over all its stacks with a blind answer key, route sample on 2 real apps | Planted flaws were not measured on a real application. Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed. |
+| Python | L3 Checked | L4 for Flask with SQLite | flaws on a synthetic app with a blind answer key, route sample on 2 real apps | Flask, FastAPI and Django are read; other Python frameworks are not. Planted flaws were not measured on a real application. A view that dispatches by method to decorated functions shows no protection. |
+| Supabase | L3 Checked | none | flaws on a demo app, counted over all its stacks with a blind answer key, map on a synthetic app | Policies and grants are read from migration files, not from a live database. |
+| .NET and ASP.NET Core | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Conventional routing (MapControllerRoute) is not read. Planted flaws were not measured on a real application. |
+| Expo and React Native | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. The one real app has 8 screens. A layout guard is a client side redirect. |
+| Firebase | L2 Mapped | none | flaws on a synthetic app, no blind key | Rules are read from files, not from a live project. |
+| Go | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. Routes that a Go library builds at run time are not read. |
+| Java and Spring | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Routes built in code (RouterFunction) and Kotlin Spring apps are not read. Planted flaws were not measured on a real application. |
+| Kotlin and Android | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Kotlin and Java source is not read, so what a handler does with an incoming intent is not in the map. |
+| PHP and Laravel | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. |
+| Ruby on Rails | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. A filter that only looks a user up is told apart from one that blocks a guest by reading its body, which other shapes of filter may defeat. |
+| Rust | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Handler bodies are not read, so data store and outbound call checks stay silent for Rust. |
+| Swift and iOS | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Swift source is not read, so what a handler does with an incoming URL is not in the map. |
+<!-- pack-coverage:end -->
+
+How to read it: each level was measured on the fixture named in the last column. A synthetic app was written for this engine, its answer key sits in the repository, and the result only shows that the extractor reads what the author expected. A blind answer key was written before the run and kept apart from the engine, which is the evidence that a level of L3 needs. False findings are counted on the fixed copy of the app where there is one, and judged by hand on the planted app where there is none (the demo). A route sample on real apps means that a seeded sample of the route registrations of real open source applications was found in the map, with the same bytes in three runs, to the standard `docs/PACK-GUIDE.md` sets. It tests the map and says nothing about whether flaws are found, because a real application has no planted flaws to count. Stacks with no such entry have not been tried on a real application yet. `hullproof pack table` prints the same table with the measured figures, and `docs/PACK-GUIDE.md` explains how a pack is built and measured.
+
+## Confirming leads that a model proposed
+
+The engine can take leads that a model proposed and decide what each one is worth. `hullproof hunt --replay` reads saved model answers from `.hullproof/<commit>/hunt/`. It drops every lead that cites code that is not in the repository, and it tries to confirm each remaining lead with one of two kinds of evidence a machine can run again: a query over the code map, or a Semgrep rule that must match the cited lines and must not match a safe sample. Only a confirmed lead becomes a finding, and it carries its evidence. Every other lead is listed in the report and can never change the gate verdict. The number of runs that raised a lead only orders the list. The same saved answers give the same bytes.
+
+Nothing in this repository calls a model. The format of the saved files is in `docs/INTERFACES.md`.
+
+## Proving a finding in a sandbox
+
+`hullproof prove` runs a test against a copy of the app inside a container and keeps the request and response transcripts as evidence. The test is a spec: data in a small step language, never code. A spec first runs a positive control, a request that is allowed to work, so a broken setup cannot pass for a result. Then it runs the attack steps. A flaw counts as proven only when the control passed and the attack got through in 3 runs out of 3. A proven flaw is a finding with the transcripts attached and enters the gate like any other confirmed finding. Anything else stays a lead with its reason, and an app the sandbox cannot start is reported as not provable here, never as passed.
+
+Nothing runs without `--allow-run` and the owner's typed confirmation. The command accepts no address and never sends a request outside the sandbox. The container runs as a non root user with a read only root filesystem, no capabilities, no host mounts, limits on memory, processor and processes, and no network while tests run. No `.env` file or key is copied in; the app gets generated dummy values. The build phase can reach the package registry and installs from the lockfile with install scripts off; `--allow-install-scripts` turns them on for apps with native modules and prints a warning, because those scripts are third party code. Start recipes exist for a Node app on Express and for a Python app on Flask, each with a local SQLite file. A Python app installs from a pinned `requirements.txt` with wheels only. A container runtime that speaks the docker command line is needed (Colima, Docker Desktop or Podman). `hullproof prove --self-test` runs escape attempts against your runtime. `hullproof prove --replay` rebuilds the result from the saved transcripts with no sandbox. The spec language and the files are in `docs/INTERFACES.md`.
 
 ## Exit codes
 
@@ -148,9 +201,34 @@ Every Semgrep rule has a tier in `rules/tiers.json`, with the measurement behind
 
 A rule becomes a lead when at least 3 of its hits were judged and the share that were real (its precision) came out below 0.80. It moves up to gate when a later measurement reaches 0.80 or more. A rule with fewer than 3 judged hits keeps its default. The engine's own taint rules (`taint-*.yaml`) start as leads until they are measured. The rules copied from the Free kit start as gate.
 
-Two kinds of finding are never leads: secrets (any Gitleaks hit, and any rule mapped to a secrets requirement), because a live key is a leak wherever it is committed, including in test files; and the engine's own checks that read files, with one exception: the checks that read the code map (`check.map.*`) are leads until they are measured.
+Two kinds of finding are never leads: secrets (any Gitleaks hit, and any rule mapped to a secrets requirement), because a live key is a leak wherever it is committed, including in test files, except a hit that is an example value (a placeholder, a published example key, or a shapeless match in documentation, fixture data, an example env file, a lockfile, vendored or generated code or a migration), which is reported as an example value and does not fail a requirement; and the engine's own checks that read files, with one exception: the checks that read the code map (`check.map.*`) are leads until they are measured.
 
-Hits in test, fixture, spec, mock and example paths are kept, marked as test code and reported apart. They do not fail a requirement, with the same exception for secrets.
+Hits in test, fixture, spec, mock and example paths are kept, marked as test code and reported apart. They do not fail a requirement, with the same exception for secrets (a secret in a test file still fails).
+
+## Running it in CI, in a commit hook and from an AI tool
+
+One command sits under all three: `hullproof ci`. It runs discovery, the code map, the scanners, the checks and the gate with no model and no container, and writes four files for the commit: `findings.json`, `report.md`, `results.sarif` (SARIF 2.1.0) and `pr-comment.md`. It exits 0 when nothing at or above `--fail-on` (default `blocker`) failed, 1 when something did, and 2 on bad input. The same commit gives the same four files, byte for byte.
+
+```
+hullproof ci . --kit $KIT
+```
+
+1. **GitHub Actions.** The Hullproof Action runs the command in a container with pinned scanners and fails the check on a blocking finding. It can send the SARIF file to code scanning and add one summary comment to a pull request. Pull requests from forks get a read only token and no secrets, so for them the upload and the comment are skipped and the exit code is unchanged. Use the `pull_request` event, never a checkout of a pull request head under `pull_request_target`.
+2. **Other CI systems.** `ci-templates/` holds templates for GitHub Actions, GitLab CI, CircleCI, Bitbucket Pipelines and Azure Pipelines. Only the GitHub Actions one has run on its CI system. The others are checked for YAML syntax and expected keys only.
+3. **Pre-commit hook.** `hullproof hooks install` adds a git pre-commit hook, a Husky entry or a pre-commit framework entry, whichever your repository uses. The check looks at the staged files only. It blocks a commit on a secret or a BLOCKER finding in them, runs on your machine and sends nothing anywhere. An engine error never blocks a commit, and `git commit --no-verify` skips the check. `hullproof hooks uninstall` removes it.
+4. **MCP server.** `hullproof mcp` serves the scan results to an AI tool over the Model Context Protocol on standard input and output. The tools are `list_requirements`, `get_requirement`, `get_checklist`, `get_gate_verdict`, `get_findings`, `get_report` and `explain_finding`, all read only. `run_scan` exists only when you start the server with `--allow-run`, and it writes only under `.hullproof/`. The server makes no network call, reads nothing outside the repository folder, and labels text that comes from your repository as data. It speaks protocol revision 2026-07-28 and the revisions 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Add it to a tool with the command `hullproof` and the argument `mcp`.
+
+## Installing the package
+
+The package runs from compiled JavaScript in `dist/`, built by `npm pack` or `npm run build` from the TypeScript sources. It has no runtime dependencies. From a tarball:
+
+```
+npm pack
+npm install --global ./hullproof-0.5.0.tgz
+hullproof version
+```
+
+Node refuses to run TypeScript files that sit inside `node_modules`, which is why the package carries the compiled build and the repository checkout runs the sources directly. Both give the same output.
 
 ## Honest limits
 
@@ -203,8 +281,8 @@ npm run typecheck
 ## Roadmap
 
 1. Model assisted hunting, as a separate step on top of this deterministic base, so the base report never changes because a model ran.
-2. A proof sandbox that tries to confirm a finding by running the app in isolation.
-3. An npm package, in addition to the release zip.
+2. Proof sandbox recipes for more stacks than Node on Express and Python on Flask.
+3. A published npm package. The compiled build exists and installs from a tarball; it is not published yet.
 
 ## Layout
 
@@ -216,6 +294,9 @@ npm run typecheck
 | `src/scanners/`, `src/mapping/` | Scanner adapters and the mapping to requirement IDs |
 | `src/checks/`, `checks/` | Executable checks, as code and as JSON; `src/checks/map/` holds the checks that read the code map |
 | `src/report/`, `src/gate/`, `src/commands/` | The report, the records and the release gate |
+| `src/prove/` | The proof sandbox: spec language, step executor, start recipes, container backend, safety rules and evidence |
+| `src/ci/`, `src/hooks/`, `src/mcp/` | The `ci` outputs (SARIF, pull request comment), the pre-commit hook, and the MCP server |
+| `ci-templates/` | CI templates for five systems |
 | `schemas/` | JSON schemas for every file the engine writes |
 | `rules/` | Semgrep rules, the Gitleaks configuration and the rule tiers |
 | `docs/` | The file formats and how the scorer matches findings |

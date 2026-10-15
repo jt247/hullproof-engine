@@ -31,7 +31,7 @@ function dtoValidated(repo: Repo, name: string): boolean {
 
 export function extractNest(repo: Repo, v: FileView): Extracted {
   const out = empty();
-  if (!/@(?:Controller|Resolver|Cron|Interval|Timeout|MessagePattern|EventPattern|SubscribeMessage|Process|Processor)\s*\(|APP_GUARD|useGlobalPipes/.test(v.text)) return out;
+  if (!/@(?:Controller|Resolver|Cron|Interval|Timeout|MessagePattern|EventPattern|SubscribeMessage|Process|Processor)\s*\(|APP_GUARD|useGlobalPipes|consumer\s*\.\s*apply\s*\(/.test(v.text)) return out;
   const { masked, text } = v;
 
   // Global guards and pipes become gates.
@@ -44,6 +44,34 @@ export function extractNest(repo: Repo, v: FileView): Extracted {
     if (/role|permission|admin|abac|casl/i.test(cls)) protections.push({ kind: 'role_check', scope: 'global', file: v.file, line, via: `APP_GUARD ${cls}`, enforced: true, confidence: 'medium' });
     if (/throttl|rate/i.test(cls)) protections.push({ kind: 'rate_limit', scope: 'global', file: v.file, line, via: `APP_GUARD ${cls}`, enforced: true, confidence: 'high' });
     if (protections.length) out.gates.push({ id: `${v.file}:${line}:APP_GUARD:${cls}`, kind: 'guard', framework: 'nest', file: v.file, line, paths: ['*'], methods: [], protections, confidence: 'medium' });
+  }
+  // Module middleware: consumer.apply(AuthMiddleware).forRoutes('path', { path: 'x', method: RequestMethod.GET }). One gate per route spec.
+  for (const m of masked.matchAll(/\.\s*apply\s*\(([^)]*)\)/g)) {
+    const statementEnd = masked.indexOf(';', m.index!);
+    const chain = text.slice(m.index!, statementEnd < 0 ? m.index! + 600 : statementEnd);
+    const fr = /\.\s*forRoutes\s*\(/.exec(chain);
+    if (!fr) continue;
+    const names = [...m[1].matchAll(/[A-Za-z_$][\w$]*/g)].map((x) => x[0]).filter((x) => !/^(?:new|function|req|res|next)$/.test(x));
+    const line = v.lines.at(m.index!);
+    const protections: Protection[] = [];
+    for (const n of names) {
+      if (/auth|jwt|session|firebase|supabase|login|token/i.test(n)) protections.push({ kind: 'session_read', scope: 'middleware', file: v.file, line, via: `module middleware ${n}`, enforced: null, confidence: 'medium' });
+      if (/role|permission|admin|abac|casl/i.test(n)) protections.push({ kind: 'role_check', scope: 'middleware', file: v.file, line, via: `module middleware ${n}`, enforced: null, confidence: 'medium' });
+      if (/throttl|rate/i.test(n)) protections.push({ kind: 'rate_limit', scope: 'middleware', file: v.file, line, via: `module middleware ${n}`, enforced: null, confidence: 'medium' });
+    }
+    if (!protections.length) continue;
+    const open = m.index! + chain.indexOf('forRoutes') + 'forRoutes'.length;
+    const args = text.slice(text.indexOf('(', open - 1) + 1, text.indexOf(')', open - 1 + chain.slice(chain.indexOf('forRoutes')).length)).trim();
+    const specs: { path: string; methods: string[] }[] = [];
+    for (const o of args.matchAll(/\{\s*path\s*:\s*['"`]([^'"`]*)['"`]\s*,\s*method\s*:\s*RequestMethod\.(\w+)\s*\}/g)) specs.push({ path: o[1], methods: o[2] === 'ALL' ? [] : [o[2]] });
+    const rest = args.replace(/\{[^}]*\}/g, ' ');
+    for (const sx of rest.matchAll(/['"`]([^'"`]*)['"`]/g)) specs.push({ path: sx[1], methods: [] });
+    if (!specs.length && /^\s*\*\s*$|['"`]\*['"`]/.test(args)) specs.push({ path: '*', methods: [] });
+    specs.forEach((sp, i) => {
+      const star = sp.path.replace(/\/?\*.*$/, '');
+      const gp = sp.path === '*' ? '*' : joinPath('/', star);
+      out.gates.push({ id: `${v.file}:${line}:forRoutes:${i}`, kind: 'middleware', framework: 'nest', file: v.file, line, paths: [gp], methods: sp.methods, protections, confidence: 'medium' });
+    });
   }
   for (const m of masked.matchAll(/useGlobalPipes\s*\(\s*new\s+ValidationPipe/g)) {
     const line = v.lines.at(m.index!);
@@ -84,7 +112,7 @@ export function extractNest(repo: Repo, v: FileView): Extracted {
       const sig = /^\s*(?:(?:public|private|protected|async|static|override)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>(]*>)?\s*\(/.exec(masked.slice(i, i + 200));
       if (!sig) continue;
       const parenIdx = i + sig[0].length - 1;
-      const f = jsFunction(masked, parenIdx);
+      const f = jsFunction(masked, parenIdx, true);
       if (!f) continue;
       let ms = at;
       for (let k = at - 1; k > bodyOpen && at - k < 700; k--) { const c = masked[k]; if (c === '}' || c === ';' || c === '{') break; ms = k; }

@@ -6,3 +6,5 @@ export type * from './results.ts';
 export type * from './findings.ts';
 export { STACK_CATEGORIES } from './stack.ts';
 export type * from './codemap.ts';
+export type * from './hunt.ts';
+export type * from './prove.ts';

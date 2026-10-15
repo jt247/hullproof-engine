@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "id": "laravel",
+  "name": "PHP and Laravel",
+  "summary": "routes/*.php joined to controllers with their middleware, policies and form requests, taint rules and checks.",
+  "edition": "free",
+  "languages": [
+    "php"
+  ],
+  "frameworks": [
+    "laravel"
+  ],
+  "level": "L2",
+  "limits": [
+    "Planted flaws were not measured on a real application."
+  ],
+  "parts": {
+    "detectors": [
+      "php",
+      "laravel"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/laravel.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/light-profiles.ts"
+      }
+    ],
+    "sources_sinks": [
+      {
+        "file": "rules/semgrep/taint-php.yaml"
+      }
+    ],
+    "rules": [
+      {
+        "file": "rules/semgrep/taint-php.yaml",
+        "tests": [
+          "test/fixtures/rules/taint-php.php"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map-more/fail",
+    "fixed_dir": "test/fixtures/map-more/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/laravel/fixture-result.json"
+  }
+}

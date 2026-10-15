@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "id": "firebase",
+  "name": "Firebase",
+  "summary": "Firestore, Storage and Realtime Database rules read into the code map, with checks for open rules and rules that only require a sign in.",
+  "edition": "free",
+  "languages": [
+    "json"
+  ],
+  "frameworks": [
+    "firestore",
+    "firebase-realtime-database"
+  ],
+  "level": "L2",
+  "limits": [
+    "Rules are read from files, not from a live project."
+  ],
+  "parts": {
+    "detectors": [
+      "firestore",
+      "firebase-realtime-database"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/config.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/config.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.firebase-auth-only-rule"
+      },
+      {
+        "id": "check.db.firebase-rules-not-open"
+      },
+      {
+        "id": "check.storage.firebase-rules-not-open"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/config-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map/fail",
+    "fixed_dir": "test/fixtures/map/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/firebase/fixture-result.json"
+  }
+}

@@ -11,16 +11,18 @@ export function gitSafety(repo: string): Safety {
   const dotGit = join(repo, '.git');
   if (!existsSync(dotGit)) return { ok: false, message: `${repo} is not a git repository`, credentialUrl: false };
   let conf: string;
+  let extra: string | null = null;
   if (statSync(dotGit).isDirectory()) {
-    if (existsSync(join(dotGit, 'config.worktree'))) return { ok: false, message: 'refused: .git/config.worktree exists, its content cannot be checked here', credentialUrl: false };
     conf = join(dotGit, 'config');
+    // config.worktree (set by newer checkouts, for example actions/checkout) is read with the same three counts as config.
+    if (existsSync(join(dotGit, 'config.worktree'))) extra = join(dotGit, 'config.worktree');
   } else {
     const m = /^gitdir:\s*(.+)$/m.exec(readFileSync(dotGit, 'utf8'));
     if (!m) return { ok: false, message: 'refused: GIT CONFIG: NOT CHECKED (cannot read the gitdir line)', credentialUrl: false };
     conf = join(dirname(dirname(resolve(repo, m[1].trim()))), 'config');
   }
   if (!existsSync(conf)) return { ok: false, message: 'refused: GIT CONFIG: NOT CHECKED (no config file at the expected place)', credentialUrl: false };
-  const lines = readFileSync(conf, 'utf8').split('\n');
+  const lines = [...readFileSync(conf, 'utf8').split('\n'), ...(extra ? readFileSync(extra, 'utf8').split('\n') : [])];
   const c1 = lines.filter((l) => /^[ \t]*(fsmonitor|sshCommand|hooksPath|textconv|pager|editor)[ \t]*=/i.test(l)).length;
   const c2 = lines.filter((l) => /^\[(diff|filter|credential)[ "]|^\[(diff|filter|credential)\]/i.test(l)).length;
   const c3 = lines.filter((l) => /:\/\/[^/ ]*@/.test(l)).length;
@@ -31,7 +33,15 @@ export function gitSafety(repo: string): Safety {
 }
 
 // git with the user and system configuration switched off, as scan.sh runs it. Call only after gitSafety passed.
-export const GIT_ENV = { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null', GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0' };
+// HULLPROOF_TRUST_REPO_OWNER=1 is set by the container entry point of the GitHub Action, where the checkout belongs to another user
+// than the one running the engine and git would otherwise refuse it as a dubious ownership folder. It switches that one git check off
+// through a command line style setting, which git honours while the user configuration stays off. The repository's own
+// configuration is still checked by gitSafety above.
+export const TRUST_REPO_OWNER = { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'safe.directory', GIT_CONFIG_VALUE_0: '*' };
+export const GIT_ENV: Record<string, string> = {
+  GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null', GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0',
+  ...(process.env.HULLPROOF_TRUST_REPO_OWNER === '1' ? TRUST_REPO_OWNER : {}),
+};
 
 function git(repo: string, args: string[]): string | null {
   const r = spawnSync('git', ['-C', repo, ...args], { encoding: 'utf8', env: { ...process.env, ...GIT_ENV } });

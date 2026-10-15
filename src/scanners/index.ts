@@ -25,7 +25,7 @@ const byKey = (a: string[], b: string[]): number => { for (let i = 0; i < a.leng
 export function toContractHits(details: DetailHit[]): Hit[] {
   const seen = new Map<string, Hit>();
   for (const d of details) {
-    const h: Hit = { tool: d.tool, rule_id: d.rule_id, file: d.file, line: d.line, sec_ids: d.sec_ids, severity_hint: d.severity_hint, message_key: d.message_key };
+    const h: Hit = { tool: d.tool, rule_id: d.rule_id, file: d.file, line: d.line, sec_ids: d.sec_ids, severity_hint: d.severity_hint, message_key: d.message_key, ...(d.noise ? { noise: d.noise } : {}) };
     const k = stableJson(h);
     if (!seen.has(k)) seen.set(k, h);
   }
@@ -55,7 +55,7 @@ export function runScanner(a: Adapter, opts: ScanOptions): ScanOutput {
       version, tracked, rulesDir: o.rulesDir!, scratch,
       run: (argv) => exec(argv, o.repo, env0),
     };
-    try { res = a.execute(o, env); }
+    try { res = a.execute(o, env); if (res && o.skipFiles?.size) res = { ...res, hits: res.hits.filter((h) => !o.skipFiles!.has(h.file)) }; }
     catch (e) { status = 'failed'; reason = `${a.tool} did not finish: ${(e as Error).message}`; }
     finally { rmSync(scratch, { recursive: true, force: true }); }
   }

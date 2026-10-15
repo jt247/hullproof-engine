@@ -1,0 +1,25 @@
+# Hullproof in CircleCI. Copy into .circleci/config.yml.
+# Before you use it, set the image to the Hullproof image digest from the release notes. The job runs the engine with no model and no
+# secret, writes four files, and fails when a finding at or above the level in --fail-on failed. It uses the Free edition requirements.
+version: 2.1
+
+jobs:
+  hullproof:
+    docker:
+      - image: ghcr.io/jt247/hullproof-action@sha256:REPLACE_WITH_THE_DIGEST_FROM_THE_RELEASE_NOTES
+    resource_class: medium
+    environment:
+      HULLPROOF_TRUST_REPO_OWNER: "1"
+    steps:
+      - checkout
+      - run:
+          name: Hullproof
+          command: hullproof ci . --out .hullproof --artifacts hullproof-ci --fail-on blocker
+      - store_artifacts:
+          path: hullproof-ci
+          destination: hullproof
+
+workflows:
+  security:
+    jobs:
+      - hullproof

@@ -4,6 +4,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { Skipped } from '../types/stack.ts';
 import { cmp, globBody } from '../util.ts';
+import { kitFolders } from './kit-files.ts';
 
 const SKIP_DIRS: Record<string, Skipped['reason']> = {
   node_modules: 'dependency folder', bower_components: 'dependency folder', jspm_packages: 'dependency folder',
@@ -55,7 +56,7 @@ function ignored(rel: string, isDir: boolean, rules: IgnoreRule[]): boolean {
 
 export interface WalkResult { files: string[]; skipped: Skipped[]; capReached: boolean }
 
-export function walk(root: string, maxFiles: number): WalkResult {
+export function walk(root: string, maxFiles: number, skipFiles?: ReadonlySet<string>): WalkResult {
   const files: string[] = [];
   const skipped: Skipped[] = [];
   let capReached = false;
@@ -75,11 +76,13 @@ export function walk(root: string, maxFiles: number): WalkResult {
       if (isDir && SKIP_DIRS[e.name]) { skipped.push({ path: rel + '/', reason: SKIP_DIRS[e.name] }); continue; }
       if (ignored(rel, isDir, rules)) { skipped.push({ path: isDir ? rel + '/' : rel, reason: 'gitignore' }); continue; }
       if (isDir) visit(rel, rules);
+      else if (skipFiles?.has(rel)) continue;
       else if (files.length >= maxFiles) capReached = true;
       else files.push(rel);
     }
   };
   if (!statSync(absRoot).isDirectory()) throw new Error(`not a folder: ${root}`);
   visit('', []);
+  if (skipFiles?.size) for (const d of kitFolders(skipFiles)) skipped.push({ path: d, reason: 'unchanged kit files' });
   return { files, skipped, capReached };
 }

@@ -38,12 +38,13 @@ export interface MapCheckSpec {
   fails(map: CodeMap, ctx: CheckContext): CheckEvidence[];
   none: string;                    // reason when there is nothing to judge
   pattern: string;                 // what was searched, for the absence record
+  fixtures?: { pass: string; fail: string }; // when the check reads facts the shared map fixtures do not hold
 }
 
 export function mapCheck(s: MapCheckSpec): CodeCheck {
   return {
     id: s.id, sec_ids: s.sec_ids, applies_when: {}, op: 'code', on_true: 'NOT ASSESSED: NEEDS DYNAMIC TEST', on_false: 'FAIL',
-    fixtures: { pass: 'test/fixtures/map/pass', fail: 'test/fixtures/map/fail' }, source: s.source,
+    fixtures: s.fixtures ?? { pass: 'test/fixtures/map/pass', fail: 'test/fixtures/map/fail' }, source: s.source,
     run: (ctx): OpOutcome => {
       const map = getMap(ctx);
       const n = s.candidates(map);

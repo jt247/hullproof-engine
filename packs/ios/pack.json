@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "id": "ios",
+  "name": "Swift and iOS",
+  "summary": "Info.plist (App Transport Security, URL schemes), the entitlements (associated domains) and the deep links they open, with a check for secrets written into Info.plist. Swift source is not read.",
+  "edition": "free",
+  "languages": [
+    "swift"
+  ],
+  "frameworks": [
+    "ios"
+  ],
+  "level": "L2",
+  "limits": [
+    "Swift source is not read, so what a handler does with an incoming URL is not in the map."
+  ],
+  "parts": {
+    "detectors": [
+      "swift",
+      "ios"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/mobile.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/mobile.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.mobile-secret-in-config"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/config-checks.ts"
+      },
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/packs/ios/fail",
+    "fixed_dir": "test/fixtures/packs/ios/pass",
+    "internal": true,
+    "answer_keys": [
+      "outside_repo"
+    ],
+    "result": "packs/ios/fixture-result.json"
+  }
+}

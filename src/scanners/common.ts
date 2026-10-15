@@ -21,6 +21,8 @@ export function toolEnv(base: NodeJS.ProcessEnv, allowNetwork: boolean): NodeJS.
     GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_SYSTEM: '/dev/null', GIT_CONFIG_NOSYSTEM: '1',
     GIT_OPTIONAL_LOCKS: '0', GIT_TERMINAL_PROMPT: '0', NO_COLOR: '1',
     SEMGREP_SEND_METRICS: 'off', SEMGREP_ENABLE_VERSION_CHECK: '0',
+    // Set by the container entry point of the GitHub Action only (see src/commands/git.ts).
+    ...(process.env.HULLPROOF_TRUST_REPO_OWNER === '1' ? { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'safe.directory', GIT_CONFIG_VALUE_0: '*' } : {}),
   };
   if (!allowNetwork) {
     for (const k of ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy']) env[k] = BLACKHOLE;

@@ -34,9 +34,11 @@ export const SESSION_PY: Pattern[] = [
   p(/@(?:\w+\.)?(?:login_required|jwt_required|auth_required|token_required|permission_required|user_passes_test|authenticated|requires_auth)\b/, 'login decorator', 'high'),
   p(/\bDepends\s*\(\s*(?:get_current_\w*|oauth2_scheme|get_user\w*|require_\w*|current_\w*|verify_\w*|auth\w*|get_token\w*|\w*(?:auth|token|jwt|bearer)\w*)\s*\)|\bSecurity\s*\(|\bHTTPBearer\b|\bOAuth2PasswordBearer\b/, 'Depends(auth)', 'high'),
   p(/\b(?:get_jwt_identity|get_jwt|verify_jwt_in_request|jwt\.decode|decode_token)\s*\(/, 'jwt', 'high'),
+  p(/@(?:\w+\.)?(?:authorize\w*|authenticate\w*|api_key_required|requires_api_key)\b/, 'auth decorator by name', 'medium'),
+  p(/@(?:\w+\.)?(?:require_(?:user|login|auth\w*|session|token|member|account|jwt)|ensure_(?:user|login|auth\w*)|login_?required|auth_?required|authenticated_only)\b/, 'login decorator by name', 'medium'),
   p(/\bpermission_classes\s*=\s*[\[(][^\])]*(?:IsAuthenticated|IsAdminUser|DjangoModelPermissions|IsAuthenticatedOrReadOnly)|\bLoginRequiredMixin\b|\bauthentication_classes\s*=\s*[\[(][^\])]*\w/, 'permission_classes', 'high'),
   p(/\bcurrent_user\b|\bg\.user\b|\brequest\.user\b|\brequest\.session\b|\bsession\s*\[|\bsession\.get\s*\(|\bauth\.get_user\b|\brequest\.auth\b/, 'current user', 'medium'),
-  p(/\b(?:get|require|ensure)_(?:current_)?(?:user|session)\w*\s*\(|\bauthenticate\s*\(|\bis_authenticated\b|\bverify_token\w*\s*\(/, 'get user', 'medium'),
+  p(/\b(?:get|require|ensure)_(?:current_)?(?:user|session)(?!_by_)\w*\s*\(|\bauthenticate\s*\(|\bis_authenticated\b|\bverify_token\w*\s*\(/, 'get user', 'medium'),
   p(/request\.headers(?:\.get\s*\(\s*|\s*\[\s*)['"]Authorization/i, 'authorization header', 'low'),
 ];
 
@@ -49,6 +51,8 @@ export const ROLE_JS: Pattern[] = [
 ];
 export const ROLE_PY: Pattern[] = [
   p(/@(?:\w+\.)?(?:roles_required|role_required|admin_required|staff_member_required|superuser_required|permission_required|user_passes_test|require_role|requires_roles|roles_accepted)\b/, 'role decorator', 'high'),
+  p(/\bDepends\s*\(\s*\w*(?:superuser|admin|staff|moderator)\w*\s*\)/, 'Depends(admin)', 'medium'),
+  p(/@(?:\w+\.)?(?:require_(?:admin|role\w*|permission\w*|staff|superuser|owner)|admin_only|admin_?required|only_admin\w*)\b/, 'role decorator by name', 'medium'),
   p(/\b(?:IsAdminUser|DjangoModelPermissions|PermissionRequiredMixin|UserPassesTestMixin|IsSuperuser|IsStaff)\b/, 'permission class', 'high'),
   p(/\.(?:is_staff|is_superuser|is_admin)\b|\bhas_perms?\s*\(|\bcurrent_user\.(?:role|is_admin)|\buser\.role\s*(?:==|!=|in)\b|\brole\s*(?:==|!=)\s*['"](?:admin|staff|owner)/i, 'role compare', 'medium'),
   p(/\b(?:require|check|assert|ensure)_(?:admin|role|permission|staff|superuser)\w*\s*\(|\bDepends\s*\(\s*(?:require_admin|admin_required|get_admin\w*|check_admin\w*|require_role\w*|get_current_admin\w*)\)/, 'role check', 'medium'),
@@ -57,7 +61,7 @@ export const ROLE_PY: Pattern[] = [
 export const SIGNATURE: Pattern[] = [
   p(/\b(?:constructEvent|construct_event|constructEventAsync|webhooks\.verify|wh\.verify|Webhook\.construct|verifyWebhook\w*|validateWebhook\w*|verifySignature\w*|verify_signature\w*|validateSignature\w*|validate_signature\w*|checkSignature\w*|verifyHmac\w*|verifyRequestSignature|isValidSignature\w*|svix|verify_webhook\w*)\b/, 'signature verify', 'high'),
   p(/\b(?:timingSafeEqual|compare_digest|hash_equals|secure_compare|hmac\.Equal)\s*\(|\bcreateHmac\s*\(|\bhmac\.new\s*\(/, 'hmac compare', 'high'),
-  p(/\bverify\w*\s*\(\s*(?:raw|body|payload|req|request|signature|sig)\b/i, 'verify call', 'medium'),
+  p(/\bverify(?!\w*pass(?:word|wd)?\b)\w*\s*\(\s*(?:raw|body|payload|req|request|signature|sig)\b/i, 'verify call', 'medium'),
 ];
 
 export const RATE: Pattern[] = [
@@ -96,7 +100,7 @@ export const PUBLIC_PATH = /^\/(?:api\/|v\d+\/|rest\/)?(health|healthz|ping|stat
 
 // Guards for allowlist style checks inside one function.
 export const URL_GUARD = /[aA]llow(?:ed)?_?(?:[lL]ist|[hH]osts?|[dD]omains?|[oO]rigins?|[uU]rls?)|\.Hostname\s*\(\)|allow(?:ed)?_?(?:list|hosts?|domains?|origins?|urls?)|ALLOWED_\w+|whitelist|isPrivate|private-?ip|isSafeUrl|isAllowedUrl|validateUrl|assertPublicUrl|safeFetch|ssrf|ip\.isPrivate|ipaddress|is_private|hostname\s*(?:===?|!==?|in)\b|\.hostname\.(?:endsWith|includes|startsWith)|\bnew URL\([^)]*\)\.(?:hostname|host|origin)\s*(?:===?|!==?)|\bhosts?\.(?:has|includes)\(|\bdomains?\.(?:has|includes)\(|netloc\s*(?:==|in|!=)/;
-export const REDIRECT_GUARD = /HasPrefix\(\s*\w+\s*,\s*"\/"|start_with\?\s*\(?\s*['"]\/|\burl_from\s*\(|allow_other_host:\s*false|str_starts_with\s*\(\s*\$\w+\s*,\s*['"]\/|Str::startsWith\(\s*\$\w+\s*,\s*['"]\/|[aA]llowed(?:Redirect|Host|Url)s?\b|startsWith\(\s*['"]\/(?!\/)|allow(?:ed)?_?(?:list|redirects?|hosts?|urls?)|ALLOWED_\w+|whitelist|is_safe_url|url_has_allowed_host_and_scheme|isSafeRedirect|isAllowedRedirect|safe_redirect|safeRedirect|sanitizeRedirect|\.origin\s*(?:===?|!==?)|\.hostname\s*(?:===?|!==?)|netloc\s*(?:==|in|!=)|\bnew URL\([^)]*\)\.(?:host|hostname|origin)|startswith\(\s*['"]\//;
+export const REDIRECT_GUARD = /\b(?:redirect_to|redirect_back|redirect)\s*\(?\s*(?:Routes\.\w+|\w+_(?:path|url)\b)|HasPrefix\(\s*\w+\s*,\s*"\/"|start_with\?\s*\(?\s*['"]\/|\burl_from\s*\(|allow_other_host:\s*false|str_starts_with\s*\(\s*\$\w+\s*,\s*['"]\/|Str::startsWith\(\s*\$\w+\s*,\s*['"]\/|[aA]llowed(?:Redirect|Host|Url)s?\b|startsWith\(\s*['"]\/(?!\/)|allow(?:ed)?_?(?:list|redirects?|hosts?|urls?)|ALLOWED_\w+|whitelist|is_safe_url|url_has_allowed_host_and_scheme|isSafeRedirect|isAllowedRedirect|safe_redirect|safeRedirect|sanitizeRedirect|\.origin\s*(?:===?|!==?)|\.hostname\s*(?:===?|!==?)|\.host\s*(?:===?|!==?)\s*[\w.:]+(?:domain|host|origin)|netloc\s*(?:==|in|!=)|\bnew URL\([^)]*\)\.(?:host|hostname|origin)|startswith\(\s*['"]\//;
 export const SIZE_GUARD = /\bmax:\d+|(?:\.size|\.length|byteLength|content_?length|\.len\b)\s*(?:>=?|<=?)|(?:>=?|<=?)\s*(?:MAX_\w+|\w*[mM]ax\w*)|limits\s*:\s*\{[^}]*fileSize|maxFileSize|max_?file_?size|MAX_CONTENT_LENGTH|FILE_UPLOAD_MAX_MEMORY_SIZE|DATA_UPLOAD_MAX|max_?size|fileSize|MaxFileSizeValidator|maxSize|ParseFilePipe|\bmax_length\b|\bcontent_length_range\b|\blimit\s*:\s*['"]?\d/i;
 export const TYPE_GUARD = /\bmimes:|\bmimetypes:|\|image\b|\bextensions:|(?:mimetype|mime_?type|content_?type|\.type|extname|\.ext\b|splitext)\b[^;\n]{0,80}(?:===|!==|==|!=|\.includes|\.startsWith|\.endsWith|\.match|\bin\b|\.test\()|(?:includes|has|test|startsWith|endsWith)\([^)]*\b(?:mimetype|mime|\.type|ext|content_?type)|fileFilter|allowed(?:Types|Extensions|Mimes?|_extensions|_types)|ALLOWED_\w+|fileTypeFromBuffer|file-type|imghdr|\bmagic\b|secure_filename|FileTypeValidator|ParseFilePipe|\bfiletype\.|python-magic/i;
 export const CLAMP = /Math\.(?:min|max)\s*\(|\bmin\s*\(|\]\s*\.min\b|\.clamp\b|\.min\s*\(|\bclamp\s*\(|\bMAX_\w+|\.max\s*\(\s*\d+|\bmaxLimit\b|\bMAX_PAGE\w*|\bPAGE_SIZE_MAX\w*|le\s*=\s*\d+|\bmax_value\b|Number\.isInteger|\bmax_page_size\b|\bpaginate_by\b|\bPAGE_SIZE\b|\bmaximum\b|\.int\(\)\.max|\.positive\(\)\.max|\.lte\s*\(/;

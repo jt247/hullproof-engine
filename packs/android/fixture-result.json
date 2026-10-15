@@ -1,0 +1,43 @@
+{
+  "detect": {
+    "expected": [
+      "android",
+      "kotlin"
+    ],
+    "found": [
+      "android",
+      "kotlin"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 2,
+        "planted": 7
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 3,
+        "extra": 0,
+        "matched": 3,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/packs/android/fail and test/fixtures/packs/android/pass",
+      "source": "node bench/packs-measure.ts android (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Android app in Kotlin: seven planted configuration flaws and a fixed copy. Five of the seven are settled by checks that belong to the Pro edition. Written before the Android extractor existed."
+  ],
+  "pack": "android",
+  "proof": [],
+  "schema": 1
+}

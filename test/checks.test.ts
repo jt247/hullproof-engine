@@ -13,7 +13,7 @@ import { releaseLine, supportTable } from '../src/checks/ops.ts';
 import { loadChecks, runChecks } from '../src/checks/run.ts';
 import { stableJson } from '../src/util.ts';
 import { validate } from './helpers/schema.ts';
-import { KIT_CONTROLS } from './helpers/kit.ts';
+import { KIT_CONTROLS, NEEDS_PRO_KIT } from './helpers/kit.ts';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 // Checks that read a kit file are given this folder as the kit; the checks shipped in every edition read none, so an
@@ -66,7 +66,7 @@ test('JSON check definitions match schemas/check.schema.json; ids are unique', (
   }
 });
 
-test('every SEC id exists in the kit controls (or is pending); PASS (static) only for repo authority', { skip: existsSync(KIT_CONTROLS) ? false : 'kit not present' }, () => {
+test('every SEC id exists in the kit controls (or is pending); PASS (static) only for repo authority', { skip: existsSync(KIT_CONTROLS) ? NEEDS_PRO_KIT : 'kit not present' }, () => {
   const controls = new Map((JSON.parse(readFileSync(KIT_CONTROLS, 'utf8')).controls as { id: string; authority: string }[]).map((c) => [c.id, c]));
   for (const c of checks) {
     for (const id of c.sec_ids) assert.ok(controls.has(id) || PENDING_IDS.test(id), `${c.id} names unknown ${id}`);

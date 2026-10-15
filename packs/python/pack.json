@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "id": "python",
+  "name": "Python",
+  "summary": "Flask, FastAPI, Django and Django REST framework: entry points, protections, taint rules and checks. L4 for Flask with a local SQLite file.",
+  "edition": "free",
+  "languages": [
+    "python"
+  ],
+  "frameworks": [
+    "flask",
+    "fastapi",
+    "django",
+    "quart",
+    "sanic",
+    "starlette"
+  ],
+  "level": "L3",
+  "scopes": [
+    {
+      "where": "Flask with SQLite",
+      "level": "L4"
+    }
+  ],
+  "limits": [
+    "Flask, FastAPI and Django are read; other Python frameworks are not. Planted flaws were not measured on a real application. A view that dispatches by method to decorated functions shows no protection."
+  ],
+  "parts": {
+    "detectors": [
+      "python",
+      "flask",
+      "fastapi",
+      "django",
+      "quart",
+      "sanic",
+      "starlette"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/py.ts"
+      },
+      {
+        "file": "src/map/py-django.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/vocab.ts"
+      }
+    ],
+    "sources_sinks": [
+      {
+        "file": "rules/semgrep/taint-python.yaml"
+      }
+    ],
+    "rules": [
+      {
+        "file": "rules/semgrep/taint-python.yaml",
+        "tests": [
+          "test/fixtures/rules/taint-python.py"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      },
+      {
+        "id": "check.authz.admin-role-check"
+      },
+      {
+        "id": "check.authz.owner-filter-on-id-read"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ],
+    "start_recipe": {
+      "file": "src/prove/recipe.ts",
+      "recipe": "python-flask"
+    }
+  },
+  "fixture": {
+    "dir": "test/fixtures/map/fail",
+    "fixed_dir": "test/fixtures/map/pass",
+    "answer_keys": [
+      "in_repo",
+      "outside_repo"
+    ],
+    "result": "packs/python/fixture-result.json"
+  }
+}

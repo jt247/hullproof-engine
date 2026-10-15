@@ -1,0 +1,63 @@
+{
+  "detect": {
+    "expected": [
+      "java",
+      "spring-boot"
+    ],
+    "found": [
+      "java",
+      "spring",
+      "spring-boot",
+      "spring-security"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 7,
+        "planted": 7
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 12,
+        "extra": 0,
+        "matched": 12,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/packs/spring/fail and test/fixtures/packs/spring/pass",
+      "source": "node bench/packs-measure.ts spring (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 25,
+        "extra": 0,
+        "matched": 25,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "WebGoat/WebGoat (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Spring Boot 3 with Spring Security 6: seven planted flaws and a fixed copy. Written before the Spring extractor existed.",
+    "2026-10-14: the first flaw also accepts check.map.read-by-id-without-owner, which was built in step 6c after these fixtures missed the flaw."
+  ],
+  "pack": "spring",
+  "proof": [],
+  "schema": 1
+}

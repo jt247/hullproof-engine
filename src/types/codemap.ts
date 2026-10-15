@@ -3,7 +3,7 @@ import type { Confidence } from './stack.ts';
 
 export type EntryKind =
   | 'http_route' | 'webhook' | 'server_action' | 'page' | 'ai_tool' | 'job' | 'graphql_resolver' | 'rpc'
-  | 'message_consumer' | 'websocket' | 'deep_link';
+  | 'message_consumer' | 'websocket' | 'deep_link' | 'ipc';
 
 export type ProtectionKind = 'session_read' | 'role_check' | 'owner_filter' | 'signature_verify' | 'rate_limit' | 'input_validation' | 'audit_log';
 export type Scope = 'handler' | 'wrapper' | 'router' | 'middleware' | 'global';
@@ -102,6 +102,28 @@ export interface FirebaseRule {
   uses_auth: boolean; owner_bound: boolean; always_true: boolean; owner_wildcard: boolean;
 }
 
+// ---- native mobile and Rust configuration (Phase 6f)
+export interface ConfigSecret { file: string; line: number; key: string; where: 'android manifest' | 'android strings' | 'ios plist' }
+export interface AndroidFilter { actions: string[]; categories: string[]; schemes: string[]; hosts: string[]; paths: string[] }
+export interface AndroidComponent {
+  kind: 'activity' | 'service' | 'receiver' | 'provider'; name: string; line: number;
+  exported: boolean; exported_explicit: boolean; permission: string | null; launcher: boolean; filters: AndroidFilter[];
+}
+export interface AndroidManifest {
+  file: string; package: string | null; line: number; debuggable: boolean | null; allow_backup: boolean | null; uses_cleartext_traffic: boolean | null;
+  network_security_config: string | null; target_sdk: number | null; permissions: string[]; components: AndroidComponent[];
+}
+export interface NetworkSecurity { file: string; line: number; cleartext_base: boolean | null; cleartext_domains: string[]; trusts_user_certs: boolean; pinned_domains: number }
+export interface AndroidConfig { manifests: AndroidManifest[]; network_security: NetworkSecurity[] }
+export interface IosPlist { file: string; ats_arbitrary_loads: boolean | null; ats_line: number | null; url_schemes: string[]; associated_domains: string[]; usage_descriptions: string[] }
+export interface IosConfig { plists: IosPlist[] }
+export interface CargoDependency { name: string; source: 'registry' | 'git' | 'path'; version: string | null; line: number }
+export interface CargoManifest {
+  file: string; line: number; name: string | null; edition: string | null; dependencies: CargoDependency[];
+  release_debug: boolean | null; release_overflow_checks: boolean | null; unsafe_code_lint: string | null; has_lock: boolean; binary: boolean;
+}
+export interface CargoConfig { manifests: CargoManifest[] }
+
 export interface AuthHelperCandidate { name: string; entry_points: number; file: string; line: number }
 export interface LocalVocabRecord { auth_helpers: string[]; role_helpers: string[] }
 
@@ -112,6 +134,9 @@ export interface CodeMap {
   coverage: Coverage[];
   entry_points: EntryPoint[];
   gates: Gate[];
-  config: { supabase: { tables: SupabaseTable[] } | null; firebase: { rules: FirebaseRule[] } | null; local_vocab: LocalVocabRecord; auth_helper_candidates: AuthHelperCandidate[] };
+  config: {
+    supabase: { tables: SupabaseTable[] } | null; firebase: { rules: FirebaseRule[] } | null; android: AndroidConfig | null; ios: IosConfig | null; cargo: CargoConfig | null;
+    secrets: ConfigSecret[]; local_vocab: LocalVocabRecord; auth_helper_candidates: AuthHelperCandidate[];
+  };
   counts: { entry_points: number; by_kind: Record<string, number>; by_framework: Record<string, number> };
 }

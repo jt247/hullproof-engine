@@ -1,0 +1,62 @@
+{
+  "detect": {
+    "expected": [
+      "expo"
+    ],
+    "found": [
+      "expo",
+      "react",
+      "react-native",
+      "supabase-auth",
+      "typescript"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": false,
+      "flaws": {
+        "false_findings": 0,
+        "found": 1,
+        "planted": 1
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 9,
+        "extra": 0,
+        "matched": 9,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/map-more/fail and test/fixtures/map-more/pass",
+      "source": "node bench/packs-measure.ts expo (key packs/expo/answer-key.json)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 8,
+        "extra": 0,
+        "matched": 8,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "obytes/react-native-template-obytes (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Synthetic fixture only. No real Expo application has been measured."
+  ],
+  "pack": "expo",
+  "proof": [],
+  "schema": 1
+}

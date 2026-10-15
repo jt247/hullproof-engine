@@ -7,7 +7,7 @@ import { closeOf, pyBlock, splitArgs } from './lex.ts';
 import { classDecos, decoratorGroups, pyParams, pyClassMethods, resolvePyModule } from './py.ts';
 import type { Repo } from './repo.ts';
 
-interface Pattern { route: string; viewText: string; line: number; includeFile: string | null; routerName: string | null }
+interface Pattern { route: string; viewText: string; line: number; includeFile: string | null; routerName: string | null; list: string | null; includeList: string | null }
 interface UrlConf { file: string; view: FileView; patterns: Pattern[]; routers: Map<string, { prefix: string; viewset: string; line: number }[]> }
 
 const GENERIC: Record<string, string[]> = {
@@ -23,6 +23,9 @@ const cleanRoute = (r: string): string => normPath(r.replace(/^\^/, '').replace(
 function parseUrlConf(repo: Repo, v: FileView): UrlConf | null {
   if (!/\burlpatterns\b/.test(v.masked)) return null;
   const conf: UrlConf = { file: v.file, view: v, patterns: [], routers: new Map() };
+  // Lists of patterns defined in this file (api_urls = [...]): a pattern belongs to the innermost list that holds it.
+  const lists: { name: string; from: number; to: number }[] = [];
+  for (const l of v.masked.matchAll(/^(\w+)\s*(?::[^=\n]+)?=\s*\[/gm)) { const open = l.index! + l[0].length - 1; const close = closeOf(v.masked, open); if (close > 0) lists.push({ name: l[1], from: open, to: close }); }
   for (const m of v.masked.matchAll(/(?<![\w.])(path|re_path|url)\s*\(/g)) {
     const open = m.index! + m[0].length - 1;
     const args = splitArgs(v.masked, open);
@@ -33,14 +36,18 @@ function parseUrlConf(repo: Repo, v: FileView): UrlConf | null {
     const inc = /^include\s*\(\s*([\s\S]*)\)\s*$/.exec(viewText);
     let includeFile: string | null = null;
     let routerName: string | null = null;
+    let includeList: string | null = null;
     if (inc) {
       const lit = /^\(?\s*['"]([\w.]+)['"]/.exec(inc[1])?.[1];
       const rn = /^(\w+)\.urls/.exec(inc[1])?.[1];
-      if (lit) includeFile = resolvePyModule(repo, v.file, lit);
+      const own = /^\(?\s*(\w+)\s*\)?\s*$/.exec(inc[1])?.[1];
+      if (own && lists.some((x) => x.name === own)) includeList = own;
+      else if (lit) includeFile = resolvePyModule(repo, v.file, lit);
       else if (rn) routerName = rn;
       else { const id = /^\(?\s*(\w+)/.exec(inc[1])?.[1]; if (id) { const imp = [...v.text.matchAll(new RegExp(`from\\s+([\\w.]+)\\s+import\\s+[^\\n]*\\b${id}\\b`, 'g'))][0]; includeFile = resolvePyModule(repo, v.file, imp ? `${imp[1]}.${id}` : id) ?? (imp ? resolvePyModule(repo, v.file, imp[1]) : null); } }
     }
-    conf.patterns.push({ route: cleanRoute(route), viewText: inc ? '' : viewText, line: v.lines.at(m.index!), includeFile, routerName });
+    const holder = lists.filter((x) => m.index! > x.from && m.index! < x.to).sort((a, b) => (a.to - a.from) - (b.to - b.from))[0];
+    conf.patterns.push({ route: cleanRoute(route), viewText: inc ? '' : viewText, line: v.lines.at(m.index!), includeFile, routerName, list: holder?.name ?? null, includeList });
   }
   for (const m of v.masked.matchAll(/\b(\w+)\.register\s*\(/g)) {
     const open = m.index! + m[0].length - 1;
@@ -54,6 +61,29 @@ function parseUrlConf(repo: Repo, v: FileView): UrlConf | null {
     conf.routers.set(m[1], list);
   }
   return conf;
+}
+
+// The function a url pattern names. A dotted reference (views.add) is followed through the import in the url file, a bare name through
+// "from x import name", and otherwise a def of that name in a views module wins over one in a model, an admin class or a command.
+function pickView(repo: Repo, urls: FileView, expr: string, fnName: string): ReturnType<Repo['defs']>[number] | undefined {
+  const defs = repo.defs('py', fnName);
+  if (defs.length <= 1) return defs[0];
+  const ref = /^([\w.]+)/.exec(expr)?.[1] ?? fnName;
+  const parts = ref.split('.');
+  let file: string | null = null;
+  if (parts.length > 1) {
+    const mod = parts[parts.length - 2];
+    const imp = new RegExp(`from\\s+([.\\w]+)\\s+import\\s+(?:[^\\n]*,\\s*)?${mod}\\b|import\\s+([.\\w]+)\\s+as\\s+${mod}\\b`).exec(urls.text);
+    if (imp) file = imp[2] ? resolvePyModule(repo, urls.file, imp[2]) : (resolvePyModule(repo, urls.file, `${imp[1].replace(/\.$/, '')}.${mod}`) ?? resolvePyModule(repo, urls.file, imp[1]));
+  } else {
+    const imp = new RegExp(`from\\s+([.\\w]+)\\s+import\\s+[^\\n]*\\b${fnName}\\b`).exec(urls.text);
+    if (imp) file = resolvePyModule(repo, urls.file, imp[1]);
+  }
+  const hit = file ? defs.filter((x) => x.view.file === file) : [];
+  if (hit.length) return hit[0];
+  const dir = urls.file.includes('/') ? urls.file.slice(0, urls.file.lastIndexOf('/') + 1) : '';
+  const rank = (f: string): number => (/(?:^|\/)views?(?:\/|\.py$|_)/.test(f) ? 0 : f.startsWith(dir) ? 1 : 2) + (/(?:admin|models?|management|tests?)(?:\/|\.py$)/.test(f) ? 3 : 0);
+  return defs.slice().sort((a, b) => rank(a.view.file) - rank(b.view.file))[0];
 }
 
 function findClass(repo: Repo, name: string, near: string): { view: FileView; at: number } | null {
@@ -102,8 +132,7 @@ export function extractDjango(repo: Repo): Extracted {
     }
     const fnName = /^([\w.]+)\s*(?:,|$)/.exec(viewExpr.trim())?.[1]?.split('.').pop();
     if (!fnName) return;
-    const defs = repo.defs('py', fnName);
-    const d = defs[0];
+    const d = pickView(repo, v, viewExpr.trim(), fnName);
     if (!d) return;
     const b = pyBlock(d.view.masked, d.view.lines, d.start);
     const g = decoratorGroups(d.view).find((x) => x.name === fnName && x.kind === 'def');
@@ -118,11 +147,15 @@ export function extractDjango(repo: Repo): Extracted {
     }
   };
 
-  const walk = (file: string, prefix: string, seen: string[]): void => {
+  const walk = (file: string, prefix: string, seen: string[], list: string | null = null): void => {
     const c = confs.get(file);
-    if (!c || seen.includes(file)) return;
+    if (!c || (list === null && seen.includes(file))) return;
+    // The top level is urlpatterns, or every pattern outside a named helper list; a helper list is read where an include() names it.
+    const named = new Set(c.patterns.filter((x) => x.includeList).map((x) => x.includeList));
     for (const p of c.patterns) {
+      if (list === null ? (p.list !== null && p.list !== 'urlpatterns' && named.has(p.list)) : p.list !== list) continue;
       const joined = joinPath(prefix, p.route);
+      if (p.includeList) { if (!seen.includes(`${file}#${p.includeList}`)) walk(file, joined, [...seen, `${file}#${p.includeList}`], p.includeList); continue; }
       if (p.includeFile) { walk(p.includeFile, joined, [...seen, file]); continue; }
       if (p.routerName) {
         for (const r of c.routers.get(p.routerName) ?? []) {
@@ -134,7 +167,7 @@ export function extractDjango(repo: Repo): Extracted {
         continue;
       }
       if (!p.viewText) continue;
-      const key = `${file}:${p.line}:${prefix}`;
+      const key = `${file}:${p.line}:${prefix}:${p.route}:${list ?? ''}`;
       if (emitted.has(key)) continue;
       emitted.add(key);
       emitView(c, prefix, p, p.viewText, p.route, seen.length);

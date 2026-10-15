@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hunt/result.json: what the engine confirmed from the saved hunt answers",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "engine_version", "commit", "runs", "entries_hunted", "calls", "incomplete", "malformed", "hallucinations", "confirmed", "leads", "usage"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "engine_version": { "type": "string" },
+    "commit": { "type": ["string", "null"] },
+    "runs": { "type": "integer", "minimum": 0 },
+    "entries_hunted": { "type": "integer", "minimum": 0 },
+    "calls": { "type": "object", "additionalProperties": false, "required": ["complete", "incomplete", "missing"], "properties": { "complete": { "type": "integer" }, "incomplete": { "type": "integer" }, "missing": { "type": "integer" } } },
+    "incomplete": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["entry_id", "run", "stop", "detail"], "properties": { "entry_id": { "type": "string" }, "run": { "type": "integer" }, "stop": { "type": "string" }, "detail": { "type": "string" } } } },
+    "malformed": { "$ref": "#/$defs/dropped" },
+    "hallucinations": { "$ref": "#/$defs/dropped" },
+    "confirmed": { "type": "array", "items": { "$ref": "#/$defs/lead" } },
+    "leads": { "type": "array", "items": { "$ref": "#/$defs/lead" } },
+    "usage": { "type": "object", "additionalProperties": false, "required": ["calls", "input_tokens", "output_tokens"], "properties": { "calls": { "type": "integer" }, "input_tokens": { "type": "integer" }, "output_tokens": { "type": "integer" } } }
+  },
+  "$defs": {
+    "dropped": {
+      "type": "object", "additionalProperties": false, "required": ["count", "items"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "items": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["run", "entry_id", "lead_id", "reason"], "properties": { "run": { "type": "integer" }, "entry_id": { "type": "string" }, "lead_id": { "type": "string" }, "reason": { "type": "string" } } } }
+      }
+    },
+    "lead": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "entry_point", "requirement_ids", "claim", "path", "sink", "runs_raised", "runs", "confirmation"],
+      "properties": {
+        "key": { "type": "string" },
+        "entry_point": { "type": "string" },
+        "requirement_ids": { "type": "array", "items": { "type": "string", "pattern": "^SEC-[A-Z]+-[0-9]{3}$" } },
+        "claim": { "type": "string" },
+        "path": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["file", "line", "note"], "properties": { "file": { "type": "string" }, "line": { "type": "integer", "minimum": 1 }, "note": { "type": "string" } } } },
+        "sink": { "type": "object", "additionalProperties": false, "required": ["file", "line"], "properties": { "file": { "type": "string" }, "line": { "type": "integer", "minimum": 1 } } },
+        "runs_raised": { "type": "integer", "minimum": 1 },
+        "runs": { "type": "array", "items": { "type": "integer" } },
+        "confirmation": {
+          "type": "object",
+          "required": ["status", "method", "detail"],
+          "properties": {
+            "status": { "enum": ["confirmed", "not_confirmed", "not_run"] },
+            "method": { "enum": ["map_query", "semgrep_rule", "generated_test", "none"] },
+            "detail": { "type": "string" },
+            "run": { "type": "integer" },
+            "tool": { "type": "string" },
+            "rule_id": { "type": "string" },
+            "tool_version": { "type": "string" },
+            "config_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        }
+      }
+    }
+  }
+}

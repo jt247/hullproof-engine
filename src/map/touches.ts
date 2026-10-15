@@ -165,6 +165,8 @@ function ormTouch(store: StoreKind, name: string, target: string | null, args: s
   const pairs: [string, string][] = [];
   if (lang === 'js') for (const m of args.matchAll(/(?:^|[{,\s])([A-Za-z_$][\w$]*)\s*(?::\s*([^,}\n]+)|(?=\s*[,}]))/g)) pairs.push([m[1], m[2] ?? m[1]]);
   else for (const m of args.matchAll(/(?:^|[(,\s])([A-Za-z_]\w*)\s*=\s*([^,)\n]+)/g)) pairs.push([m[1], m[2]]);
+  // A shorthand key inside a nested object, as in { where: { id } }, is swallowed by the value of the outer key above.
+  if (lang === 'js') for (const m of args.matchAll(/[{,]\s*([A-Za-z_$][\w$]*)\s*(?=[,}])/g)) pairs.push([m[1], m[1]]);
   for (const [k, v] of pairs) if (/^(?:id|_id|uuid|pk)$/.test(k) && isTainted(t, v, lang)) byId = true;
   const sets = op === 'write' ? pairs.filter(([k, v]) => PRIVILEGED.test(k) && isTainted(t, v, lang)).map(([k]) => k) : [];
   const limit = pairs.some(([k, v]) => /^(?:take|limit|first|pageSize|page_size|per_page|perPage|size|max|count)$/.test(k) && isTainted(t, v, lang)) || /\.\s*(?:limit|take|range|slice)\s*\(\s*[^)]*\)/.test(args) && [...args.matchAll(/\.\s*(?:limit|take|range|slice)\s*\(([^)]*)\)/g)].some((m) => isTainted(t, m[1], lang));

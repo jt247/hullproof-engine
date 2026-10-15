@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "id": "android",
+  "name": "Kotlin and Android",
+  "summary": "AndroidManifest.xml, the network security configuration and exported components read into the code map, with a check for secrets written into configuration files. Kotlin source is not read.",
+  "edition": "free",
+  "languages": [
+    "kotlin",
+    "java"
+  ],
+  "frameworks": [
+    "android"
+  ],
+  "level": "L2",
+  "limits": [
+    "Kotlin and Java source is not read, so what a handler does with an incoming intent is not in the map."
+  ],
+  "parts": {
+    "detectors": [
+      "kotlin",
+      "android"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/mobile.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/mobile.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.mobile-secret-in-config"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/config-checks.ts"
+      },
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/packs/android/fail",
+    "fixed_dir": "test/fixtures/packs/android/pass",
+    "internal": true,
+    "answer_keys": [
+      "outside_repo"
+    ],
+    "result": "packs/android/fixture-result.json"
+  }
+}

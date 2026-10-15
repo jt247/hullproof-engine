@@ -22,6 +22,14 @@
       "precision": 0,
       "tier": "lead"
     },
+    "check.map.read-by-id-without-owner": {
+      "date": "2026-10-14",
+      "evidence": "hand judged against the route chain: OWASP RailsGoat f5951f1 (6 places, all true), Juice Shop (1 true), hullproof-demo F04 (1 true), WebGoat (1 not the flaw); BenchmarkPython and the other nine real apps had no hit; see bench/PHASE6C-MEASURED-2026-10-14.md",
+      "judged": 9,
+      "needs_judged": 20,
+      "precision": 0.89,
+      "tier": "lead"
+    },
     "check.map.write-by-id-without-owner": {
       "date": "2026-10-11",
       "evidence": "Juice Shop 0e6d909 and BenchmarkPython f129148, hand checked samples of 20 findings each, seed 20261011, engine a3035af; see bench/PHASE2-MEASURED-2026-10-11.md",

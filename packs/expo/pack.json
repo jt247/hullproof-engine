@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "id": "expo",
+  "name": "Expo and React Native",
+  "summary": "Expo Router screens, API routes and deep links read into the code map, with checks.",
+  "edition": "free",
+  "languages": [
+    "typescript",
+    "javascript"
+  ],
+  "frameworks": [
+    "expo"
+  ],
+  "level": "L2",
+  "limits": [
+    "Planted flaws were not measured on a real application. The one real app has 8 screens. A layout guard is a client side redirect."
+  ],
+  "parts": {
+    "detectors": [
+      "expo",
+      "typescript"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/expo.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/vocab.ts"
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map-more/fail",
+    "fixed_dir": "test/fixtures/map-more/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/expo/fixture-result.json"
+  }
+}

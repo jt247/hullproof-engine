@@ -1,0 +1,43 @@
+{
+  "detect": {
+    "expected": [
+      "ios",
+      "swift"
+    ],
+    "found": [
+      "ios",
+      "swift"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 1,
+        "planted": 2
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 2,
+        "extra": 0,
+        "matched": 2,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/packs/ios/fail and test/fixtures/packs/ios/pass",
+      "source": "node bench/packs-measure.ts ios (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "iOS app in Swift: two planted configuration flaws and a fixed copy. One of the two is settled by a check that belongs to the Pro edition. Written before the iOS extractor existed."
+  ],
+  "pack": "ios",
+  "proof": [],
+  "schema": 1
+}

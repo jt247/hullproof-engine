@@ -1,0 +1,62 @@
+{
+  "detect": {
+    "expected": [
+      "aspnet-core",
+      "csharp"
+    ],
+    "found": [
+      "aspnet-core",
+      "csharp",
+      "entity-framework"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 6,
+        "planted": 6
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 11,
+        "extra": 0,
+        "matched": 11,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/packs/dotnet/fail and test/fixtures/packs/dotnet/pass",
+      "source": "node bench/packs-measure.ts dotnet (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    },
+    {
+      "blind_key": true,
+      "flaws": null,
+      "kind": "third_party",
+      "mapped": {
+        "expected": 25,
+        "extra": 0,
+        "matched": 25,
+        "what": "entry points (real route registrations)"
+      },
+      "name": "realworld-apps/aspnetcore-realworld-example-app (seeded sample of its route registrations)",
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "ASP.NET Core 8 with controllers and minimal APIs: six planted flaws and a fixed copy. Written before the .NET extractor existed. Route token convention: [controller] is replaced by the lower case controller name.",
+    "2026-10-14: the first flaw also accepts check.map.read-by-id-without-owner, which was built in step 6c after these fixtures missed the flaw."
+  ],
+  "pack": "dotnet",
+  "proof": [],
+  "schema": 1
+}

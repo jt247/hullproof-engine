@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "id": "go",
+  "name": "Go",
+  "summary": "net/http, chi, gin, echo, fiber and gorilla/mux routes with group and route middleware, taint rules and checks.",
+  "edition": "free",
+  "languages": [
+    "go"
+  ],
+  "frameworks": [
+    "chi",
+    "echo",
+    "fiber",
+    "gin",
+    "gorilla-mux"
+  ],
+  "level": "L2",
+  "limits": [
+    "Planted flaws were not measured on a real application. Routes that a Go library builds at run time are not read."
+  ],
+  "parts": {
+    "detectors": [
+      "go",
+      "chi",
+      "echo",
+      "fiber",
+      "gin",
+      "gorilla-mux"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/go.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/light-profiles.ts"
+      }
+    ],
+    "sources_sinks": [
+      {
+        "file": "rules/semgrep/taint-go.yaml"
+      }
+    ],
+    "rules": [
+      {
+        "file": "rules/semgrep/taint-go.yaml",
+        "tests": [
+          "test/fixtures/rules/taint-go.go"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ]
+  },
+  "fixture": {
+    "dir": "test/fixtures/map-more/fail",
+    "fixed_dir": "test/fixtures/map-more/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/go/fixture-result.json"
+  }
+}

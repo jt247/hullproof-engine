@@ -1,0 +1,32 @@
+# Hullproof in GitLab CI. Copy into .gitlab-ci.yml or include it.
+# Before you use it, set HULLPROOF_IMAGE to the Hullproof image digest from the release notes. The job runs the engine with no model and
+# no secret, writes four files, and fails the pipeline when a finding at or above FAIL_ON failed. It uses the Free edition requirements.
+stages:
+  - security
+
+variables:
+  HULLPROOF_IMAGE: "ghcr.io/jt247/hullproof-action@sha256:REPLACE_WITH_THE_DIGEST_FROM_THE_RELEASE_NOTES"
+  FAIL_ON: "blocker"
+  GIT_STRATEGY: clone
+  GIT_DEPTH: "20"
+
+hullproof:
+  stage: security
+  image:
+    name: $HULLPROOF_IMAGE
+    entrypoint: [""]
+  variables:
+    HULLPROOF_TRUST_REPO_OWNER: "1"
+  script:
+    - hullproof ci "$CI_PROJECT_DIR" --out "$CI_PROJECT_DIR/.hullproof" --artifacts "$CI_PROJECT_DIR/hullproof-ci" --fail-on "$FAIL_ON"
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - hullproof-ci/findings.json
+      - hullproof-ci/report.md
+      - hullproof-ci/results.sarif
+      - hullproof-ci/pr-comment.md
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

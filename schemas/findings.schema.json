@@ -2,14 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://hullproof.invalid/findings.schema.json",
   "title": "Hullproof findings record",
-  "description": "The JSON object inside the hullproof-findings block of a <report>.findings.md file. This schema states field names, types and limits only. It cannot state the rules that connect fields (class and kind requirements, fingerprint order and prefix, verifier and lowering rules, report consistency, machine_evidence only in schema_version 1.1.0). validate-findings.mjs checks those.",
+  "description": "The JSON object inside the hullproof-findings block of a <report>.findings.md file. This schema states field names, types and limits only. It cannot state the rules that connect fields (class and kind requirements, fingerprint order and prefix, verifier and lowering rules, report consistency, machine_evidence from schema_version 1.1.0, its evidence_kind and run fields from 1.2.0). validate-findings.mjs checks those.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "schema_version": {
       "enum": [
         "1.0.0",
-        "1.1.0"
+        "1.1.0",
+        "1.2.0"
       ]
     },
     "report": {
@@ -63,7 +64,8 @@
             "budget_exhausted",
             "agent_failure",
             "owner_stopped",
-            "deterministic_only"
+            "deterministic_only",
+            "engine_hunt"
           ]
         },
         "agent_calls": {
@@ -598,6 +600,24 @@
                     ],
                     "pattern": "^[0-9a-f]{64}$",
                     "maxLength": 64
+                  },
+                  "evidence_kind": {
+                    "enum": [
+                      "scanner_rule",
+                      "engine_check",
+                      "hunt_confirmed",
+                      "sandbox_test"
+                    ]
+                  },
+                  "runs": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "runs_proven": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20
                   }
                 },
                 "required": [

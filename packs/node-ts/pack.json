@@ -1,0 +1,134 @@
+{
+  "schema": 1,
+  "id": "node-ts",
+  "name": "Node and TypeScript",
+  "summary": "Next.js, Express and Fastify family, NestJS and tRPC: entry points, protections, taint rules and checks. L4 for Express with a local SQLite file.",
+  "edition": "free",
+  "languages": [
+    "javascript",
+    "typescript"
+  ],
+  "frameworks": [
+    "nextjs",
+    "express",
+    "fastify",
+    "koa",
+    "hono",
+    "nestjs",
+    "trpc"
+  ],
+  "level": "L3",
+  "scopes": [
+    {
+      "where": "Express with SQLite",
+      "level": "L4"
+    }
+  ],
+  "limits": [
+    "Planted flaws were not measured on a real application. Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed."
+  ],
+  "parts": {
+    "detectors": [
+      "javascript",
+      "typescript",
+      "nextjs",
+      "express",
+      "fastify",
+      "koa",
+      "hono",
+      "nestjs",
+      "trpc"
+    ],
+    "extractors": [
+      {
+        "file": "src/map/js-express.ts"
+      },
+      {
+        "file": "src/map/js-next.ts"
+      },
+      {
+        "file": "src/map/js-misc.ts"
+      }
+    ],
+    "auth_patterns": [
+      {
+        "file": "src/map/vocab.ts"
+      }
+    ],
+    "sources_sinks": [
+      {
+        "file": "rules/semgrep/taint-javascript.yaml"
+      }
+    ],
+    "rules": [
+      {
+        "file": "rules/semgrep/taint-javascript.yaml",
+        "tests": [
+          "test/fixtures/rules/taint-javascript.js",
+          "test/fixtures/rules/taint-javascript.tsx"
+        ]
+      }
+    ],
+    "checks": [
+      {
+        "id": "check.map.admin-route-without-role"
+      },
+      {
+        "id": "check.map.data-read-without-auth"
+      },
+      {
+        "id": "check.map.mutating-route-without-auth"
+      },
+      {
+        "id": "check.map.privileged-action-without-audit"
+      },
+      {
+        "id": "check.map.privileged-field-from-request"
+      },
+      {
+        "id": "check.map.redirect-from-request"
+      },
+      {
+        "id": "check.map.request-url-fetched"
+      },
+      {
+        "id": "check.map.webhook-verify-before-use"
+      },
+      {
+        "id": "check.map.write-by-id-without-owner"
+      },
+      {
+        "id": "check.map.read-by-id-without-owner"
+      },
+      {
+        "id": "check.web.cors-no-reflected-origin"
+      },
+      {
+        "id": "check.api.webhook-verified-before-use"
+      },
+      {
+        "id": "check.authz.owner-filter-on-id-read"
+      },
+      {
+        "id": "check.authz.admin-role-check"
+      }
+    ],
+    "mapping": [
+      {
+        "file": "src/checks/map/entry-checks.ts"
+      }
+    ],
+    "start_recipe": {
+      "file": "src/prove/recipe.ts",
+      "recipe": "node-express"
+    }
+  },
+  "fixture": {
+    "dir": "test/fixtures/map/fail",
+    "fixed_dir": "test/fixtures/map/pass",
+    "answer_keys": [
+      "in_repo"
+    ],
+    "result": "packs/node-ts/fixture-result.json"
+  }
+}

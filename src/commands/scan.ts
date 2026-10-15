@@ -1,7 +1,7 @@
 // hullproof scan: discover, scanner adapters, checks, then results.json, the findings record and surface.json, all under
 // <out>/<commit>/. Every contract file is byte identical for the same commit, engine, kit files and tool versions.
 // Run times go to run.json and scan/run.json only.
-import { existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { discover } from '../discover/discover.ts';
@@ -18,6 +18,7 @@ import { stableJson } from '../util.ts';
 import { ENGINE_VERSION } from '../version.ts';
 import type { Hit, ScannerId, Stack, ToolMeta } from '../types/index.ts';
 import { gitSafety, gitState } from './git.ts';
+import { kitOwnedFiles } from '../discover/kit-files.ts';
 
 export interface ScanOptions {
   repo: string; out: string | null; kit: string | null; edition: Edition; stage: Stage | null;
@@ -46,8 +47,8 @@ export interface ScanInfo {
 export const KIT_LOCAL = 'kit.local.json';
 export const outDirFor = (repo: string, out: string | null, commit: string): string => join(resolve(out ?? join(repo, '.hullproof')), commit);
 
-function defaultScanners(o: ScanOptions, stack: Stack, dir: string, controlsPath: string, kitDir: string, rulePack: string | null): { hits: Hit[]; metas: ToolMeta[] } {
-  const outs = runScanners({ repo: o.repo, out: dir, stack, allowNetwork: o.allowNetwork, edition: o.edition, controlsPath, history: true, kit: kitDir, rulePack }, o.tools ?? undefined);
+function defaultScanners(o: ScanOptions, stack: Stack, dir: string, controlsPath: string, kitDir: string, rulePack: string | null, skipFiles: ReadonlySet<string>): { hits: Hit[]; metas: ToolMeta[] } {
+  const outs = runScanners({ repo: o.repo, out: dir, stack, allowNetwork: o.allowNetwork, edition: o.edition, controlsPath, history: true, kit: kitDir, rulePack, skipFiles }, o.tools ?? undefined);
   return { hits: outs.flatMap((s) => s.hits.hits), metas: outs.map((s) => s.meta) };
 }
 
@@ -81,13 +82,17 @@ export async function scan(o: ScanOptions): Promise<number> {
   const started = Date.now();
   const dir = outDirFor(repo, o.out, git.commit);
   // Start from an empty folder so files from an earlier run with other tools never mix in.
-  rmSync(dir, { recursive: true, force: true });
+  // The hunt folder holds saved model answers that cost the user tokens to get, and the prove folder holds specs and the transcripts
+  // that are the evidence of a proof, so a new scan never deletes either.
+  if (existsSync(dir)) for (const n of readdirSync(dir)) if (n !== 'hunt' && n !== 'prove') rmSync(join(dir, n), { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  const stack = discover(repo);
+  const kitFiles = kitOwnedFiles(repo, kitDir);
+  if (kitFiles.size) log(`hullproof scan: ${kitFiles.size} unchanged Hullproof kit files in the project are left out of the scan (they hold planted test samples)`);
+  const stack = discover(repo, { skipFiles: kitFiles });
   writeFileSync(join(dir, 'stack.json'), stableJson(stack));
 
   const controlsPath = join(kitDir, 'docs/hullproof/security-controls.json');
-  const sc = o.scanners ? o.scanners(stack, dir) : defaultScanners(o, stack, dir, controlsPath, kitDir, pack.path);
+  const sc = o.scanners ? o.scanners(stack, dir) : defaultScanners(o, stack, dir, controlsPath, kitDir, pack.path, kitFiles);
   const hits = sc?.hits ?? [];
   const metas = (sc?.metas ?? []).slice().sort((a, b) => (a.tool < b.tool ? -1 : 1));
   if (o.scanners) {

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Hullproof hunt output: what a model returns for one entry point",
+  "description": "Written to work as a strict structured output schema (every property required, no extra properties, no length keywords). The engine checks the limits itself in src/confirm/lead.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["leads"],
+  "properties": {
+    "leads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lead_id", "entry_point", "requirement_ids", "claim", "path", "quoted_code", "evidence_proposal"],
+        "properties": {
+          "lead_id": { "type": "string" },
+          "entry_point": { "type": "string" },
+          "requirement_ids": { "type": "array", "items": { "type": "string" } },
+          "claim": { "type": "string" },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["file", "line", "note"],
+              "properties": { "file": { "type": "string" }, "line": { "type": "integer" }, "note": { "type": "string" } }
+            }
+          },
+          "quoted_code": { "type": "string" },
+          "evidence_proposal": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["kind", "query_json", "rule_yaml", "control_code", "control_extension"],
+            "properties": {
+              "kind": { "type": "string", "enum": ["map_query", "semgrep_rule", "generated_test", "none"] },
+              "query_json": { "type": ["string", "null"] },
+              "rule_yaml": { "type": ["string", "null"] },
+              "control_code": { "type": ["string", "null"] },
+              "control_extension": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

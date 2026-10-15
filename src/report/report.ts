@@ -8,6 +8,10 @@ import type { GateOutcome } from '../gate/gate.ts';
 import { SEV_RANK, type Kit } from './kit.ts';
 import type { ScanFolder } from './load.ts';
 import { renderEntryPoints } from './entry-points.ts';
+import { reportSection } from '../packs/coverage.ts';
+import { renderHunt } from './hunt-section.ts';
+import { renderProve } from './prove-section.ts';
+import type { Merged } from '../confirm/merge.ts';
 
 const cell = (s: string): string => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const loc = (e: { file: string; line: number }): string => `\`${e.file}:${e.line}\``;
@@ -21,7 +25,7 @@ const STATE_MEANS: Record<RouteState, string> = {
   'UNKNOWN': 'These are settled by reading code, and no engine check or rule covers them yet. The engine has a code map and no model.',
 };
 
-export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome): string {
+export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome, merged: Merged | null = null): string {
   const out: string[] = [];
   const p = (...l: string[]): void => { out.push(...l); };
   const fails = s.findings.records.filter((r): r is FailRecord => r.kind === 'fail')
@@ -75,6 +79,9 @@ export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome): string
     p(`Found by: ${me.tool === 'hullproof-check' ? `engine check ${me.rule_id}` : `${me.tool} ${me.tool_version}, rule ${me.rule_id}`}. Each line: ${f.evidence.map((e) => `${e.file}:${e.line} ${e.note}`).join('; ')}.`, '');
   });
 
+  p(...renderHunt(s.hunt, merged));
+  p(...renderProve(s.prove, merged));
+
   if (obs.length) {
     p('## Leads outside this run\'s scope', '');
     p('These were found but do not count in this run: their requirement is above the declared stage, outside the edition, or not mapped to a requirement. They never affect the gate.', '');
@@ -120,6 +127,7 @@ export function renderReport(s: ScanFolder, kit: Kit, gate: GateOutcome): string
   p('');
 
   if (s.codemap) p(...renderEntryPoints(s.codemap));
+  p(...reportSection(s.stack));
 
   p('## Unverified controls (NOT ASSESSED)', '');
   p('Nothing in the files settled these. They are open, not passed. Each group says what settles it.', '');

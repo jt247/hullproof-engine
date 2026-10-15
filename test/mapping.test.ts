@@ -9,7 +9,7 @@ import { loadTable, mapHit } from '../src/mapping/map.ts';
 import { classFromScore, classFromWord, decide, DEFAULT_POLICY } from '../src/mapping/dependency-policy.ts';
 import { readRules } from '../src/scanners/semgrep.ts';
 import { sha256 } from '../src/scanners/common.ts';
-import { KIT } from './helpers/kit.ts';
+import { KIT, NEEDS_PRO_KIT } from './helpers/kit.ts';
 import { EXTRA_RULE_DIRS } from './helpers/packs.ts';
 
 const controls = loadControls();
@@ -18,7 +18,7 @@ const INFRA = join(KIT, 'docs/hullproof/INFRASTRUCTURE-SECURITY.md');
 const RULES = fileURLToPath(new URL('../rules/', import.meta.url));
 const NEW_CLOUD = /^SEC-CLOUD-0(4[6-9]|5[0-2])$/;
 
-test('every ID in the mapping tables exists in the controls file, or is a new cloud ID written in INFRASTRUCTURE-SECURITY.md', { skip: noKit }, () => {
+test('every ID in the mapping tables exists in the controls file, or is a new cloud ID written in INFRASTRUCTURE-SECURITY.md', { skip: noKit || NEEDS_PRO_KIT }, () => {
   const infra = existsSync(INFRA) ? readFileSync(INFRA, 'utf8') : '';
   for (const tool of ['gitleaks', 'osv-scanner', 'trivy'] as const) {
     const t = loadTable(tool);
@@ -38,7 +38,7 @@ test('trivy table: rows sorted, ids unique and shaped like Trivy check ids', () 
   for (const r of rows) assert.match(r.rule_id, /^(AWS|AZU|GCP|DS)-\d{4}$/);
 });
 
-test('every Semgrep rule sec_id exists in the controls file, and every kit Semgrep test id is a rule we ship', { skip: noKit }, () => {
+test('every Semgrep rule sec_id exists in the controls file, and every kit Semgrep test id is a rule we ship', { skip: noKit || NEEDS_PRO_KIT }, () => {
   const rules = readRules(join(RULES, 'semgrep'), EXTRA_RULE_DIRS[0] ?? null);
   for (const r of rules) for (const id of r.sec_ids) assert.ok(controls!.byId.has(id), `${r.id}: ${id}`);
   // The kit lists a rule for some requirements. The rules this edition ships are a part of the kit's rule set, so the
@@ -92,7 +92,7 @@ test('dependency policy: classes from score and word, deadlines, fail and report
   assert.equal(decide('HIGH', '2026-10-09', '2026-10-10', { ...DEFAULT_POLICY, fail_always: ['CRITICAL'] }).decision, 'report');
 });
 
-for (const dir of [RULES, ...EXTRA_RULE_DIRS.map((d) => join(d, '..'))]) test(`rules copy in ${dir.endsWith('rules/') || dir.endsWith('rules') ? 'rules' : 'the extra rule folder'} matches the kit it names in SOURCE.json`, { skip: existsSync(join(dir, 'SOURCE.json')) ? false : 'no SOURCE.json' }, () => {
+for (const dir of [RULES, ...EXTRA_RULE_DIRS.map((d) => join(d, '..'))]) test(`rules copy in ${dir.endsWith('rules/') || dir.endsWith('rules') ? 'rules' : 'the extra rule folder'} matches the kit it names in SOURCE.json`, { skip: existsSync(join(dir, 'SOURCE.json')) ? NEEDS_PRO_KIT : 'no SOURCE.json' }, () => {
   const src = JSON.parse(readFileSync(join(dir, 'SOURCE.json'), 'utf8')) as { files: { path: string; source: string; source_sha256: string }[] };
   const kit = join(KIT, '..');
   for (const f of src.files) {

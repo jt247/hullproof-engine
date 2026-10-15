@@ -91,12 +91,15 @@ export const adapter: Adapter = {
       for (const f of ruleFiles(engineRules, pack)) copyFileSync(f, join(rulesDir, basename(f)));
     }
     // ponytail: every tracked file goes on the command line; split into batches if a repository ever passes ARG_MAX.
-    const files = env.tracked ? [...env.tracked].filter((f) => isRegularFile(join(o.repo, f))).sort(cmp) : [];
+    const listed = o.targets ? new Set(o.targets) : env.tracked;
+    const files = listed ? [...listed].filter((f) => isRegularFile(join(o.repo, f))).sort(cmp) : [];
     const skipped = files.filter((f) => /\.(js|mjs|cjs|ts|jsx|tsx|json|ya?ml|html|py)$/.test(f) && minified(join(o.repo, f)));
-    const targets = env.tracked ? files.filter((f) => !skipped.includes(f)) : ['.'];
+    const targets = listed ? files.filter((f) => !skipped.includes(f)) : ['.'];
     const base = adapter.command({ ...o, rulesDir: env.rulesDir } as ScanOptions);
     const shown = [...base.map((a) => (a === join(env.rulesDir, 'semgrep') ? (pack ? '<engine>/rules/semgrep + <rule-pack>' : '<engine>/rules/semgrep') : a)),
-      env.tracked ? `<${targets.length} tracked files, list sha256 ${sha256(targets.join('\n')).slice(0, 16)}>` : '.'];
+      listed ? `<${targets.length} ${o.targets ? 'listed' : 'tracked'} files, list sha256 ${sha256(targets.join('\n')).slice(0, 16)}>` : '.'];
+    // No file to read: Semgrep with no target would read the whole folder, so it is not called.
+    if (listed && targets.length === 0) return { hits: [], toolErrors: [], commands: [shown], configSha256: dirSha256(rulesDir), scanned: [], exitCode: 0 };
     const r = env.run([...base.map((a) => (a === join(env.rulesDir, 'semgrep') ? rulesDir : a)), ...targets]);
     let parsed: SemgrepJson;
     try { parsed = JSON.parse(r.stdout) as SemgrepJson; } catch { throw new Error(`semgrep printed no JSON (exit ${r.status})`); }

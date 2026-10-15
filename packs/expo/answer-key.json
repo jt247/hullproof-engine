@@ -1,0 +1,51 @@
+{
+  "pack": "expo",
+  "fail_dir": "test/fixtures/map-more/fail",
+  "pass_dir": "test/fixtures/map-more/pass",
+  "stacks": [
+    "expo"
+  ],
+  "detect_expected": [
+    "expo"
+  ],
+  "mapped_what": "entry points",
+  "mapped": [
+    "deep_link - Linking url listener",
+    "deep_link - https://notes.example.com/",
+    "deep_link - https://notes.example.com/n",
+    "deep_link - notesapp://",
+    "http_route POST /api/notes",
+    "page - /",
+    "page - /account",
+    "page - /notes/:id",
+    "page - /sign-in"
+  ],
+  "flaws": [
+    {
+      "check": "mutating-route-without-auth",
+      "stack": "expo"
+    }
+  ],
+  "notes": [
+    "Synthetic fixture only. No real Expo application has been measured."
+  ],
+  "recorded": [
+    {
+      "name": "obytes/react-native-template-obytes (seeded sample of its route registrations)",
+      "kind": "third_party",
+      "blind_key": true,
+      "source": "bench/PHASE6C-MEASURED-2026-10-14.md, recall by bench/phase6c-sample.ts with seed 20261017, three byte identical ci runs",
+      "mapped": {
+        "what": "entry points (real route registrations)",
+        "expected": 8,
+        "matched": 8,
+        "extra": 0
+      },
+      "flaws": null,
+      "stability": {
+        "runs": 3,
+        "identical": true
+      }
+    }
+  ]
+}

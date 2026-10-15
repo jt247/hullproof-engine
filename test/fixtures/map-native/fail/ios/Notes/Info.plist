@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.acme.notes</string>
+    <key>CFBundleName</key>
+    <string>Notes</string>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <true/>
+    </dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>acmenotes</string>
+            </array>
+        </dict>
+    </array>
+    <key>ApiSecret</key>
+    <string>fixture-api-secret-value-0000</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Scan receipts into a note.</string>
+</dict>
+</plist>

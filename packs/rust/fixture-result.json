@@ -1,0 +1,43 @@
+{
+  "detect": {
+    "expected": [
+      "axum",
+      "rust"
+    ],
+    "found": [
+      "axum",
+      "rust"
+    ]
+  },
+  "engine": "0.5.0",
+  "measured": "2026-10-14",
+  "measurements": [
+    {
+      "blind_key": true,
+      "flaws": {
+        "false_findings": 0,
+        "found": 3,
+        "planted": 6
+      },
+      "kind": "synthetic",
+      "mapped": {
+        "expected": 10,
+        "extra": 0,
+        "matched": 10,
+        "what": "entry points"
+      },
+      "name": "test/fixtures/packs/rust/fail and test/fixtures/packs/rust/pass",
+      "source": "node bench/packs-measure.ts rust (key kept outside the repository)",
+      "stability": {
+        "identical": true,
+        "runs": 3
+      }
+    }
+  ],
+  "notes": [
+    "Rust service on axum: six planted flaws and a fixed copy. Two are settled by checks that belong to the Pro edition. The export route flaw needs a read of the handler body, which the Rust reader does not do. Written before the Rust extractor existed."
+  ],
+  "pack": "rust",
+  "proof": [],
+  "schema": 1
+}

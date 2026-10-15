@@ -3,7 +3,7 @@
 
 import { maskMore } from './lex-more.ts';
 
-export type Lang = 'js' | 'py' | 'go' | 'rb' | 'php';
+export type Lang = 'js' | 'py' | 'go' | 'rb' | 'php' | 'java' | 'cs' | 'kt' | 'swift' | 'rs';
 
 const blank = (s: string): string => s.replace(/[^\n]/g, ' ');
 
@@ -23,7 +23,7 @@ function regexAllowed(text: string, i: number): boolean {
 // and newlines stay, so a regular expression run on the copy never matches inside a comment or a string, and a position in
 // the copy is the same position in the original.
 export function mask(text: string, lang: Lang): string {
-  if (lang === 'go' || lang === 'rb' || lang === 'php') return maskMore(text, lang);
+  if (lang !== 'js' && lang !== 'py') return maskMore(text, lang);
   const n = text.length;
   const out: string[] = [];
   let i = 0;
@@ -198,7 +198,8 @@ export interface Extent { start: number; end: number; bodyStart: number }
 // The extent of the JavaScript or TypeScript function that begins at `from` (the index of "async", "function", "(" or a
 // single parameter name before "=>"). bodyStart is the first index of the body text (the "{" or the first token of an
 // expression body). Returns null when the text there is not a function.
-export function jsFunction(masked: string, from: number): Extent | null {
+// `method`: the text is a class method, so a "{" after the return type at bracket depth 0 is the body and never an object type.
+export function jsFunction(masked: string, from: number, method = false): Extent | null {
   let i = from;
   const ws = (): void => { while (i < masked.length && /\s/.test(masked[i])) i++; };
   ws();
@@ -224,10 +225,10 @@ export function jsFunction(masked: string, from: number): Extent | null {
       else if (c === ')' || c === ']') depth--;
       else if (c === '<') depth++;
       else if (c === '>' && masked[i - 1] !== '=') depth--;
-      else if (c === '{' && depth <= 0 && !isFunctionKeyword) { depth++; }
-      else if (c === '}' && depth > 0 && !isFunctionKeyword) { depth--; }
+      else if (c === '{' && depth <= 0 && !isFunctionKeyword && !method) { depth++; }
+      else if (c === '}' && depth > 0 && !isFunctionKeyword && !method) { depth--; }
       else if (c === '=' && masked[i + 1] === '>' && depth <= 0) break;
-      else if (c === '{' && depth <= 0 && isFunctionKeyword) break;
+      else if (c === '{' && depth <= 0 && (isFunctionKeyword || method)) break;
     }
   }
   ws();

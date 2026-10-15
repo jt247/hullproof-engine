@@ -67,12 +67,12 @@ const extOf = (f: string): string => {
   return d > 0 ? b.slice(d + 1).toLowerCase() : '';
 };
 
-export interface DiscoverOptions { detectors?: LoadedDetectors }
+export interface DiscoverOptions { detectors?: LoadedDetectors; skipFiles?: ReadonlySet<string> } // skipFiles: unchanged kit files (kit-files.ts)
 
 export function discover(repo: string, opts: DiscoverOptions = {}): Stack {
   const root = resolve(repo);
   const det = opts.detectors ?? loadDetectors();
-  const listing = walk(root, LIMITS.maxFiles);
+  const listing = walk(root, LIMITS.maxFiles, opts.skipFiles);
   const files = listing.files;
 
   const cache = new Map<string, string>();

@@ -54,6 +54,8 @@ for (const side of ['fail', 'pass']) {
 }
 
 // Which stacks the fail copy must be flagged in, per check. The pass copy must not be flagged by any of them.
+// The checks that read Android, iOS and Cargo facts have their own fixtures (test/fixtures/map-native) and test (codemap-mobile-rust.test.ts).
+const NATIVE = /android|ios-|cargo-|mobile-|read-by-id-/;
 const ALL = ['django', 'express', 'fastapi', 'flask', 'nest', 'nextapp'];
 const OPEN_MATRIX: Record<string, string[]> = {
   'admin-route-without-role': ALL,
@@ -80,13 +82,13 @@ const PRO_MATRIX: Record<string, string[]> = {
 const MATRIX: Record<string, string[]> = PRO_MAP_CHECKS.length > 0 ? { ...OPEN_MATRIX, ...PRO_MATRIX } : OPEN_MATRIX;
 
 test('there are at least 10 checks that read the code map, each named in the matrix', () => {
-  const ids = loadChecks().map((c) => c.id).filter((id) => id.startsWith('check.map.')).map((id) => id.slice('check.map.'.length)).sort();
+  const ids = loadChecks().map((c) => c.id).filter((id) => id.startsWith('check.map.') && !NATIVE.test(id)).map((id) => id.slice('check.map.'.length)).sort();
   assert.ok(ids.length >= 10);
   assert.deepEqual(ids, Object.keys(MATRIX).sort());
 });
 
 test('each check flags the fail copy in every stack it applies to, and flags nothing in the pass copy', () => {
-  const checks = loadChecks().filter((c) => c.id.startsWith('check.map.'));
+  const checks = loadChecks().filter((c) => c.id.startsWith('check.map.') && !NATIVE.test(c.id));
   const run = (side: string) => { const dir = join(MAPS, side); return runChecks(makeContext(dir, discover(dir), [], null), checks); };
   const fail = run('fail');
   const pass = run('pass');
@@ -143,18 +145,18 @@ function project(files: Record<string, string>): string {
 
 test('a language with no extractor is reported as not mapped, never silently empty', () => {
   const dir = project({
-    'Cargo.toml': '[package]\nname = "app"\nversion = "0.1.0"\n\n[dependencies]\naxum = "0.7"\n',
-    'src/main.rs': 'use axum::{routing::get, Router};\n\n#[tokio::main]\nasync fn main() {\n    let app = Router::new().route("/ping", get(|| async { "pong" }));\n}\n',
+    'mix.exs': 'defmodule App.MixProject do\n  def deps do\n    [{:phoenix, "~> 1.7"}]\n  end\nend\n',
+    'lib/app_web/router.ex': 'defmodule AppWeb.Router do\n  use Phoenix.Router\n  scope "/" do\n    get "/ping", PingController, :index\n  end\nend\n',
   });
   const m = mapOf(dir);
   assert.equal(m.counts.entry_points, 0);
-  const rust = m.coverage.find((c) => c.language === 'rust')!;
-  assert.equal(rust.status, 'not_mapped');
-  assert.equal(rust.extractor, null);
-  assert.match(rust.note, /No extractor for rust yet/);
-  assert.match(rust.note, /axum/);
+  const ex = m.coverage.find((c) => c.language === 'elixir')!;
+  assert.equal(ex.status, 'not_mapped');
+  assert.equal(ex.extractor, null);
+  assert.match(ex.note, /No extractor for elixir yet/);
+  assert.match(ex.note, /phoenix/);
   const lines = renderEntryPoints(m).join('\n');
-  assert.match(lines, /The code map is incomplete for rust/);
+  assert.match(lines, /The code map is incomplete for elixir/);
 });
 
 test('a framework the extractor does not read makes the language partly mapped', () => {

@@ -32,7 +32,7 @@ export interface StackItem {
   manifests?: string[];    // package_managers only
 }
 
-export interface Skipped { path: string; reason: 'gitignore' | 'dependency folder' | 'build output' | 'tool folder' | 'symlink' }
+export interface Skipped { path: string; reason: 'gitignore' | 'dependency folder' | 'build output' | 'tool folder' | 'symlink' | 'unchanged kit files' }
 export interface Unknown { file: string; note: string }
 
 export interface Stack {
