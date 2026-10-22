@@ -107,6 +107,8 @@ export function validatePack(folder: string, env: Env): Checked {
     if (!r || typeof r.file !== 'string') { bad('file', 'rules: an entry has no file'); continue; }
     if (!here(r.file)) { if (r.pro && !env.hasPro) skipped.push(`rules: ${r.file} (Pro, not in this edition)`); else bad('file_missing', `rules: ${r.file} does not exist`); continue; }
     if (!Array.isArray(r.tests) || r.tests.length === 0) { bad('rule_without_test', `rules: ${r.file} has no test files`); continue; }
+    // An npm install carries the rules but not the test folder, so the rule tests cannot be read there.
+    if (!existsSync(join(env.root, 'test/fixtures'))) { skipped.push(`rules: tests for ${r.file} (no fixture folder in this tree)`); continue; }
     const missing = r.tests.filter((t) => !here(t));
     for (const t of missing) bad('file_missing', `rules: test file ${t} for ${r.file} does not exist`);
     if (missing.length) continue;

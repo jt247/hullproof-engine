@@ -12,7 +12,9 @@
   "bugs": {
     "url": "https://github.com/jt247/hullproof-engine/issues"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "hullproof": "dist/cli.js"

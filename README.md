@@ -220,7 +220,15 @@ hullproof ci . --kit $KIT
 
 ## Installing the package
 
-The package runs from compiled JavaScript in `dist/`, built by `npm pack` or `npm run build` from the TypeScript sources. It has no runtime dependencies. From a tarball:
+The package runs from compiled JavaScript in `dist/`, built by `npm pack` or `npm run build` from the TypeScript sources. It has no runtime dependencies. From npm, the package is named `hullproof`:
+
+```
+npm install --global hullproof
+hullproof --version
+hullproof ci . --kit path/to/hullproof-free/kit --edition free
+```
+
+Or run it without installing it: `npx hullproof ci . --kit path/to/hullproof-free/kit --edition free`. The package holds the engine and not the kit, so you still need the kit (clone the Free repository or unzip its release zip) and pass it with `--kit`. From a tarball you build yourself:
 
 ```
 npm pack
@@ -282,7 +290,7 @@ npm run typecheck
 
 1. Model assisted hunting, as a separate step on top of this deterministic base, so the base report never changes because a model ran.
 2. Proof sandbox recipes for more stacks than Node on Express and Python on Flask.
-3. A published npm package. The compiled build exists and installs from a tarball; it is not published yet.
+3. Signed build provenance for the npm package. It needs a publish from a CI system, and the first release was published from a person's machine.
 
 ## Layout
 

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -51,6 +51,10 @@ test('every pack in packs/ passes the validator', () => {
 
 test('the Go pack is the baseline for the rejection tests: it passes in the scratch tree too', () => {
   assert.deepEqual(codes(goPack()), []);
+});
+
+test('an install without a test folder (the npm package) skips the rule test files and the fixture folders, and the pack still passes', () => {
+  assert.deepEqual(codes(goPack(), undefined, (e) => { rmSync(join(e.root, 'test'), { force: true }); }), []);
 });
 
 test('a pack with no manifest, or a manifest that is not JSON, is rejected', () => {
