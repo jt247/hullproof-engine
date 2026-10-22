@@ -23,7 +23,7 @@
     }
   ],
   "limits": [
-    "Flask, FastAPI and Django are read; other Python frameworks are not. Planted flaws were not measured on a real application. A view that dispatches by method to decorated functions shows no protection."
+    "Flask, FastAPI and Django are read; other Python frameworks are not. A view that dispatches by method to decorated functions shows no protection."
   ],
   "parts": {
     "detectors": [

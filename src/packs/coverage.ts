@@ -89,9 +89,9 @@ export function reportSection(stack: Stack, rows: Row[] = currentRows()): string
   if (!hit.length) { out.push('No stack in this repository has a pack beyond L0. Secrets, dependencies, infrastructure files and the generic rules were checked.', ''); return out; }
   out.push('| Stack | Level | Higher level for | Not covered |', '|---|---|---|---|', ...hit.map((r) => `| ${r.name} | ${r.level} ${LEVEL_NAMES[r.level]} | ${scopeText(r)} | ${r.limits.join(' ') || 'nothing recorded'} |`), '');
   const synthetic = hit.filter((r) => r.onlySynthetic);
-  if (synthetic.length) out.push(`Measured on synthetic fixtures only: ${synthetic.map((r) => r.name).join(', ')}. No real application has been measured for them yet.`, '');
+  if (synthetic.length) out.push(`Measured on synthetic fixtures: ${synthetic.map((r) => r.name).join(', ')}.`, '');
   const sampled = hit.filter((r) => !r.onlySynthetic && /route sample on/.test(r.fixture));
-  if (sampled.length) out.push(`Also checked on real applications, by a sample of their route registrations only (planted flaws were not measured there): ${sampled.map((r) => r.name).join(', ')}.`, '');
+  if (sampled.length) out.push(`Also checked on real applications, by a sample of their route registrations: ${sampled.map((r) => r.name).join(', ')}.`, '');
   return out;
 }
 

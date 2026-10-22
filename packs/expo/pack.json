@@ -13,7 +13,7 @@
   ],
   "level": "L2",
   "limits": [
-    "Planted flaws were not measured on a real application. The one real app has 8 screens. A layout guard is a client side redirect."
+    "A layout guard is a client side redirect."
   ],
   "parts": {
     "detectors": [

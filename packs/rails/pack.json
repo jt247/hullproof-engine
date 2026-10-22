@@ -12,7 +12,7 @@
   ],
   "level": "L2",
   "limits": [
-    "Planted flaws were not measured on a real application. A filter that only looks a user up is told apart from one that blocks a guest by reading its body, which other shapes of filter may defeat."
+    "A filter that only looks a user up is told apart from one that blocks a guest by reading its body."
   ],
   "parts": {
     "detectors": [

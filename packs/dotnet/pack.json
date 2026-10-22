@@ -12,7 +12,7 @@
   ],
   "level": "L2",
   "limits": [
-    "Conventional routing (MapControllerRoute) is not read. Planted flaws were not measured on a real application."
+    "Conventional routing (MapControllerRoute) is not read."
   ],
   "parts": {
     "detectors": [

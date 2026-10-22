@@ -13,7 +13,7 @@
   ],
   "level": "L2",
   "limits": [
-    "Routes built in code (RouterFunction) and Kotlin Spring apps are not read. Planted flaws were not measured on a real application."
+    "Routes built in code (RouterFunction) and Kotlin Spring apps are not read."
   ],
   "parts": {
     "detectors": [

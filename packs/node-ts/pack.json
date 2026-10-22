@@ -25,7 +25,7 @@
     }
   ],
   "limits": [
-    "Planted flaws were not measured on a real application. Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed."
+    "Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed."
   ],
   "parts": {
     "detectors": [

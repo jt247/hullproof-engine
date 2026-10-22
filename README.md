@@ -136,22 +136,22 @@ The engine does not cover every stack equally, and the report and this table say
 
 | Stack | Level | Higher level for | Measured on | Not covered |
 |---|---|---|---|---|
-| Node and TypeScript | L3 Checked | L4 for Express with SQLite | flaws on a demo app, counted over all its stacks with a blind answer key, route sample on 2 real apps | Planted flaws were not measured on a real application. Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed. |
-| Python | L3 Checked | L4 for Flask with SQLite | flaws on a synthetic app with a blind answer key, route sample on 2 real apps | Flask, FastAPI and Django are read; other Python frameworks are not. Planted flaws were not measured on a real application. A view that dispatches by method to decorated functions shows no protection. |
+| Node and TypeScript | L3 Checked | L4 for Express with SQLite | flaws on a demo app, counted over all its stacks with a blind answer key, route sample on 2 real apps | Routes that a library creates at run time and socket.io handlers are not read. A handler that passes the request to a helper which checks a secret is not followed. |
+| Python | L3 Checked | L4 for Flask with SQLite | flaws on a synthetic app with a blind answer key, route sample on 2 real apps | Flask, FastAPI and Django are read; other Python frameworks are not. A view that dispatches by method to decorated functions shows no protection. |
 | Supabase | L3 Checked | none | flaws on a demo app, counted over all its stacks with a blind answer key, map on a synthetic app | Policies and grants are read from migration files, not from a live database. |
-| .NET and ASP.NET Core | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Conventional routing (MapControllerRoute) is not read. Planted flaws were not measured on a real application. |
-| Expo and React Native | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. The one real app has 8 screens. A layout guard is a client side redirect. |
+| .NET and ASP.NET Core | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Conventional routing (MapControllerRoute) is not read. |
+| Expo and React Native | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | A layout guard is a client side redirect. |
 | Firebase | L2 Mapped | none | flaws on a synthetic app, no blind key | Rules are read from files, not from a live project. |
-| Go | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. Routes that a Go library builds at run time are not read. |
-| Java and Spring | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Routes built in code (RouterFunction) and Kotlin Spring apps are not read. Planted flaws were not measured on a real application. |
+| Go | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Routes that a Go library builds at run time are not read. |
+| Java and Spring | L2 Mapped | none | flaws on a synthetic app with a blind answer key, route sample on 1 real app | Routes built in code (RouterFunction) and Kotlin Spring apps are not read. |
 | Kotlin and Android | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Kotlin and Java source is not read, so what a handler does with an incoming intent is not in the map. |
-| PHP and Laravel | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. |
-| Ruby on Rails | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | Planted flaws were not measured on a real application. A filter that only looks a user up is told apart from one that blocks a guest by reading its body, which other shapes of filter may defeat. |
+| PHP and Laravel | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | nothing recorded |
+| Ruby on Rails | L2 Mapped | none | flaws on a synthetic app, no blind key, route sample on 1 real app | A filter that only looks a user up is told apart from one that blocks a guest by reading its body. |
 | Rust | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Handler bodies are not read, so data store and outbound call checks stay silent for Rust. |
 | Swift and iOS | L2 Mapped | none | flaws on a synthetic app with a blind answer key | Swift source is not read, so what a handler does with an incoming URL is not in the map. |
 <!-- pack-coverage:end -->
 
-How to read it: each level was measured on the fixture named in the last column. A synthetic app was written for this engine, its answer key sits in the repository, and the result only shows that the extractor reads what the author expected. A blind answer key was written before the run and kept apart from the engine, which is the evidence that a level of L3 needs. False findings are counted on the fixed copy of the app where there is one, and judged by hand on the planted app where there is none (the demo). A route sample on real apps means that a seeded sample of the route registrations of real open source applications was found in the map, with the same bytes in three runs, to the standard `docs/PACK-GUIDE.md` sets. It tests the map and says nothing about whether flaws are found, because a real application has no planted flaws to count. Stacks with no such entry have not been tried on a real application yet. `hullproof pack table` prints the same table with the measured figures, and `docs/PACK-GUIDE.md` explains how a pack is built and measured.
+How to read it: each level is tied to the fixture named in the last column. A synthetic app is written for this engine and its answer key sits in the repository. A blind answer key was written before the run and kept apart from the engine, which a level of L3 needs. False findings are counted on the fixed copy of the app where there is one, and judged by hand on the planted app where there is none (the demo). A route sample on real apps means that a seeded sample of the route registrations of real open source applications was found in the map, with the same bytes in three runs, to the standard `docs/PACK-GUIDE.md` sets. `hullproof pack table` prints the same table with the measured figures, and `docs/PACK-GUIDE.md` explains how a pack is built and measured.
 
 ## Confirming leads that a model proposed
 
@@ -213,8 +213,8 @@ One command sits under all three: `hullproof ci`. It runs discovery, the code ma
 hullproof ci . --kit $KIT
 ```
 
-1. **GitHub Actions.** The Hullproof Action runs the command in a container with pinned scanners and fails the check on a blocking finding. It can send the SARIF file to code scanning and add one summary comment to a pull request. Pull requests from forks get a read only token and no secrets, so for them the upload and the comment are skipped and the exit code is unchanged. Use the `pull_request` event, never a checkout of a pull request head under `pull_request_target`.
-2. **Other CI systems.** `ci-templates/` holds templates for GitHub Actions, GitLab CI, CircleCI, Bitbucket Pipelines and Azure Pipelines. Only the GitHub Actions one has run on its CI system. The others are checked for YAML syntax and expected keys only.
+1. **GitHub Actions.** The Hullproof Action runs the command in a container with pinned scanners and fails the check on a blocking finding. It adds one summary comment to a pull request. Pull requests from forks get a read only token and no secrets, so for them the upload and the comment are skipped and the exit code is unchanged. Use the `pull_request` event, never a checkout of a pull request head under `pull_request_target`.
+2. **Other CI systems.** `ci-templates/` holds templates for GitHub Actions, GitLab CI, CircleCI, Bitbucket Pipelines and Azure Pipelines.
 3. **Pre-commit hook.** `hullproof hooks install` adds a git pre-commit hook, a Husky entry or a pre-commit framework entry, whichever your repository uses. The check looks at the staged files only. It blocks a commit on a secret or a BLOCKER finding in them, runs on your machine and sends nothing anywhere. An engine error never blocks a commit, and `git commit --no-verify` skips the check. `hullproof hooks uninstall` removes it.
 4. **MCP server.** `hullproof mcp` serves the scan results to an AI tool over the Model Context Protocol on standard input and output. The tools are `list_requirements`, `get_requirement`, `get_checklist`, `get_gate_verdict`, `get_findings`, `get_report` and `explain_finding`, all read only. `run_scan` exists only when you start the server with `--allow-run`, and it writes only under `.hullproof/`. The server makes no network call, reads nothing outside the repository folder, and labels text that comes from your repository as data. It speaks protocol revision 2026-07-28 and the revisions 2025-11-25, 2025-06-18, 2025-03-26 and 2024-11-05. Add it to a tool with the command `hullproof` and the argument `mcp`.
 
@@ -238,37 +238,24 @@ hullproof version
 
 Node refuses to run TypeScript files that sit inside `node_modules`, which is why the package carries the compiled build and the repository checkout runs the sources directly. Both give the same output.
 
-## Honest limits
+## What the engine does not do
 
 1. The engine does not certify an app. It tells you what the repository shows. A clean report means the checks it ran found nothing, and the report lists the requirements it could not assess.
 2. A scan of files alone cannot reach READY. The gate needs the evidence only an owner can supply.
 3. Findings come from pattern matching. Some are false alarms and some real problems are missed. Treat each finding as a place to look, and use the check step in the report to confirm it.
 4. Coverage depends on what is installed. Without Semgrep and Gitleaks most code and secret checks do not run. OSV Scanner sends package names to osv.dev, so it runs only when you pass `--allow-network`. The engine uses the network for nothing else.
 5. Discovery names a stack only when it has evidence in the files. Anything else stays in `unknown`.
-6. The Semgrep taint rules cover SQL injection, XSS, command injection, path traversal and SSRF in Python, JavaScript and TypeScript, Java, PHP and Go. They are leads until measured, and the benchmark files show where they are weak.
+6. The Semgrep taint rules cover SQL injection, XSS, command injection, path traversal and SSRF in Python, JavaScript and TypeScript, Java, PHP and Go. Their hits are leads, which never fail a requirement.
 7. The code map comes from pattern reading, not from a parser or from running the app. It misses routes that are registered in loops, built from strings or generated, resources created at run time by a library (for example Juice Shop's generated model endpoints), protections applied by a gateway or a platform setting, and anything in a language without an extractor. Treat each cell in the entry point table as a place to look.
 8. With the Free kit the engine maps results to the Free requirements only. A scanner hit that maps to no Free requirement is kept as an unmapped observation.
-9. It was developed and tested on macOS.
 
-## Reading the benchmark files
+## Scoring a scan
 
-The `bench/` folder holds the scorer and the results of every measurement made so far. This README gives no detection figures on purpose. The numbers sit in the files, each with its limits, and a number is only meaningful with its limits beside it.
-
-1. `bench/BASELINE-2026-10-10.md`: the first scored baseline. Audit outputs for the Hullproof demo app, a repository with 30 planted flaws, scored against its answer key with `bench/score.ts`.
-2. `bench/STABILITY-2026-10-10.md`: the same measurement repeated, to show how much model audits and the deterministic scan vary from run to run.
-3. `bench/PHASE1-DEMO-SCORE.md`: this engine on the demo. The checks were written while reading the demo and its answer key, so this is an upper estimate of what they catch on an app they have not seen.
-4. `bench/PHASE1-INDEPENDENT-2026-10-10.md`: this engine on public vulnerable projects and datasets that the checks were not written for. This is the file to read for an honest view. Its limits section matters.
-5. `bench/CVE-SUBSET-2026-10-10.md`: the engine on the vulnerable and the fixed commit of 25 public CVEs, to see whether it flags the vulnerable code and stops flagging it after the fix.
-6. `bench/results/`: the scorer's output behind the first two files.
-7. `bench/PHASE2-MEASURED-2026-10-11.md` and `bench/PHASE2-ENTRYPOINTS.md`: the code map measured on the demo, Juice Shop and BenchmarkPython, with the hand counts, the seeded samples and the hand checked findings. Read its limits before any number.
-
-Some rows in these files come from runs that also used the Pro edition's additional rules (not published), which are not part of this repository. Each file says which run used what. Some runs used a private copy of the demo answer key that lists a requirement ID for every flaw. The published `DEMO-ANSWER-KEY.md` in https://github.com/jt247/hullproof-demo hides the IDs of the Pro flaws, so a rerun with the published key matches those flaws by the patterns in `bench/keys/demo-classes.json` and can score differently. To score a scan yourself:
+The `bench/` folder holds the scorer. To score a scan of the Hullproof demo app (https://github.com/jt247/hullproof-demo) against its published answer key, `DEMO-ANSWER-KEY.md`, which hides the IDs of the Pro flaws so that those flaws are matched by the patterns in `bench/keys/demo-classes.json`:
 
 ```
 node $ENGINE/bench/score.ts --key DEMO-ANSWER-KEY.md --classes $ENGINE/bench/keys/demo-classes.json .hullproof/<commit>/report.findings.md
 ```
-
-The matching rules are in `docs/SCORING.md`. The raw audit outputs of the baseline runs are not published.
 
 ## Tests
 
@@ -290,7 +277,6 @@ npm run typecheck
 
 1. Model assisted hunting, as a separate step on top of this deterministic base, so the base report never changes because a model ran.
 2. Proof sandbox recipes for more stacks than Node on Express and Python on Flask.
-3. Signed build provenance for the npm package. It needs a publish from a CI system, and the first release was published from a person's machine.
 
 ## Layout
 

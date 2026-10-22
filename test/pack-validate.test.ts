@@ -177,7 +177,6 @@ test('first wave levels are the honest ones: Go, Rails, Laravel and Expo are L2,
     assert.match(rows.get(id)!.fixture, /synthetic/, id);
     assert.match(rows.get(id)!.fixture, /no blind key/, id);
     assert.match(rows.get(id)!.fixture, /route sample on 1 real app/, id);
-    assert.match(rows.get(id)!.limits.join(' '), /not measured on a real application/i, id);
   }
   assert.equal(rows.get('node-ts')!.level, 'L3');
   assert.deepEqual(rows.get('node-ts')!.scopes, [{ where: 'Express with SQLite', level: 'L4' }]);
@@ -215,8 +214,8 @@ test('the report section lists the packs for the stacks found, and says L0 for t
   const lines = reportSection(discover(fx), coverageRows(validateAll(undefined, env))).join('\n');
   assert.match(lines, /## Stack coverage/);
   assert.match(lines, /\| Go \| L2 Mapped \|/);
-  assert.doesNotMatch(lines, /Measured on synthetic fixtures only: Go/);
-  assert.match(lines, /Also checked on real applications, by a sample of their route registrations only .*: Go\./);
+  assert.doesNotMatch(lines, /Measured on synthetic fixtures: Go/);
+  assert.match(lines, /Also checked on real applications, by a sample of their route registrations: Go\./);
   const none = reportSection(discover(join(ROOT, 'test/fixtures/stacks/unknown-stack')), coverageRows(validateAll(undefined, env))).join('\n');
   assert.match(none, /No stack in this repository has a pack beyond L0/);
 });

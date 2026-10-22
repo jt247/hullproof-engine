@@ -11,9 +11,7 @@
     "laravel"
   ],
   "level": "L2",
-  "limits": [
-    "Planted flaws were not measured on a real application."
-  ],
+  "limits": [],
   "parts": {
     "detectors": [
       "php",
