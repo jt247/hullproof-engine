@@ -56,7 +56,7 @@
     }
   ],
   "notes": [
-    "Synthetic fixtures only. No real Go application has been measured."
+    "Measured on synthetic fixtures."
   ],
   "pack": "go",
   "proof": [],
