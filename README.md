@@ -12,7 +12,7 @@ It is not a general purpose scanner, and it does not wrap a language model. No m
 4. Map every result to a Hullproof requirement ID, using the requirements in the Hullproof Free kit.
 5. Write a report in plain English and a release gate result. A requirement that nothing settled is listed as NOT ASSESSED with what would settle it. It is never reported as a pass.
 
-The engine is open under the Apache License 2.0. Release 0.5.0 comes as a zip on the GitHub releases page of this repository.
+The engine is open under the Apache License 2.0. Release 0.5.1 comes as a zip on the GitHub releases page of this repository.
 
 **The one stop for everything is the Hullproof Free repository, https://github.com/jt247/hullproof-free.** It holds this engine in its `engine/` folder, the kit in `kit/`, the upload pack in `pack/`, setup instructions written for an AI tool (`AI-SETUP.md`) and the Free zip. Clone that one repository and you have everything. This repository holds only the engine.
 
@@ -199,9 +199,9 @@ Every Semgrep rule has a tier in `rules/tiers.json`, with the measurement behind
 1. A gate rule's hit is a finding. It fails its requirements and can hold the release gate.
 2. A lead rule's hit is listed in the report under "Leads from rules still being measured". It never fails a requirement and never holds the gate. Read the code at each place it names.
 
-A rule becomes a lead when at least 3 of its hits were judged and the share that were real (its precision) came out below 0.80. It moves up to gate when a later measurement reaches 0.80 or more. A rule with fewer than 3 judged hits keeps its default. The engine's own taint rules (`taint-*.yaml`) start as leads until they are measured. The rules copied from the Free kit start as gate.
+A rule becomes a lead when at least 3 of its hits were judged and the share that were real (its precision) came out below 0.80. It moves up to gate when a later measurement reaches 0.80 or more. A rule with fewer than 3 judged hits keeps its default. The engine's own taint rules (`taint-*.yaml`) start as leads. The rules copied from the Free kit start as gate.
 
-Two kinds of finding are never leads: secrets (any Gitleaks hit, and any rule mapped to a secrets requirement), because a live key is a leak wherever it is committed, including in test files, except a hit that is an example value (a placeholder, a published example key, or a shapeless match in documentation, fixture data, an example env file, a lockfile, vendored or generated code or a migration), which is reported as an example value and does not fail a requirement; and the engine's own checks that read files, with one exception: the checks that read the code map (`check.map.*`) are leads until they are measured.
+Two kinds of finding are never leads: secrets (any Gitleaks hit, and any rule mapped to a secrets requirement), because a live key is a leak wherever it is committed, including in test files, except a hit that is an example value (a placeholder, a published example key, or a shapeless match in documentation, fixture data, an example env file, a lockfile, vendored or generated code or a migration), which is reported as an example value and does not fail a requirement; and the engine's own checks that read files, with one exception: the checks that read the code map (`check.map.*`) are leads.
 
 Hits in test, fixture, spec, mock and example paths are kept, marked as test code and reported apart. They do not fail a requirement, with the same exception for secrets (a secret in a test file still fails).
 
@@ -232,7 +232,7 @@ Or run it without installing it: `npx hullproof ci . --kit path/to/hullproof-fre
 
 ```
 npm pack
-npm install --global ./hullproof-0.5.0.tgz
+npm install --global ./hullproof-0.5.1.tgz
 hullproof version
 ```
 

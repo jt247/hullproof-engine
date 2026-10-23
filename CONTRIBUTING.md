@@ -33,7 +33,7 @@ Some tests need a Hullproof kit. Point `HULLPROOF_KIT` at the `kit` folder of a 
 
 1. A Semgrep rule goes in `rules/semgrep/` with a fixture in `test/fixtures/rules/` that shows a hit and a non hit. `test/rules.test.ts` runs them with `semgrep --test`.
 2. An executable check is a JSON file in `checks/` (or a TypeScript check in `src/checks/code/`) with a `pass` and a `fail` fixture folder in `test/fixtures/checks/`. Every check must fail on its fail fixture and must not fail on its pass fixture.
-3. A new taint rule (`taint-*.yaml`) starts as a lead until it has been measured. See the README section on how much a rule is trusted.
+3. A new taint rule (`taint-*.yaml`) starts as a lead. See the README section on how much a rule is trusted.
 
 ## Style and writing
 

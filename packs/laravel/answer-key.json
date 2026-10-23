@@ -60,7 +60,7 @@
     }
   ],
   "notes": [
-    "Synthetic fixture only. No real Laravel application has been measured."
+    "Measured on synthetic fixtures."
   ],
   "recorded": [
     {

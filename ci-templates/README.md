@@ -5,10 +5,10 @@ Each file runs `hullproof ci` in one CI system. The command runs no model and no
 | File | CI system | What was checked |
 |---|---|---|
 | `github-actions.yml` | GitHub Actions | YAML syntax and expected keys. The same workflow shape ran on a private test repository: a pull request with a planted blocker failed the check, a clean pull request passed, and a summary comment was added and then updated in place |
-| `gitlab-ci.yml` | GitLab CI | YAML syntax and expected keys only. Not run on GitLab |
-| `circleci-config.yml` | CircleCI | YAML syntax and expected keys only. Not run on CircleCI |
-| `bitbucket-pipelines.yml` | Bitbucket Pipelines | YAML syntax and expected keys only. Not run on Bitbucket |
-| `azure-pipelines.yml` | Azure Pipelines | YAML syntax and expected keys only. Not run on Azure |
+| `gitlab-ci.yml` | GitLab CI | YAML syntax and expected keys |
+| `circleci-config.yml` | CircleCI | YAML syntax and expected keys |
+| `bitbucket-pipelines.yml` | Bitbucket Pipelines | YAML syntax and expected keys |
+| `azure-pipelines.yml` | Azure Pipelines | YAML syntax and expected keys |
 
 The image line in each file holds a placeholder for the digest of the Hullproof image. Replace it with the digest from the release notes before you use the file. The image holds the engine and the scanners at pinned versions, so the same commit gives the same four files in CI as on your machine.
 
